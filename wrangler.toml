@@ -1,0 +1,44 @@
+name = "obex-dns"
+main = "src/index.ts"
+compatibility_date = "2026-02-28"
+compatibility_flags = ["nodejs_compat"]
+# account_id = ""
+minify = true
+
+[assets]
+directory = "./static"
+binding = "ASSETS"
+
+# D1 Database for Profiles, Rules and Logs
+[[d1_databases]]
+binding = "DB"
+database_name = "obex_db"
+database_id = ""
+
+# KV Namespace for Cache (Deprecated, primary use Cache API)
+# [[kv_namespaces]]
+# binding = "CACHE_KV"
+# id = ""
+
+[triggers]
+crons = ["0 * * * *"]
+
+[placement]
+mode = "targeted"
+region = "aws:ap-east1"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+
+[vars]
+IP_REGION_APAC='[{"ip":"198.41.222.102","area":"SG"},{"ip":"173.245.59.246","area":"SG"},{"ip":"198.41.208.229","area":"HK"},{"ip":"198.41.208.229","area":"HK"}]'
+IP_REGION_NAE='[]'
+IP_REGION_NAW='[]'
+IP_REGION_EU='[]'

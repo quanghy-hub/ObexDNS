@@ -1,0 +1,35 @@
+
+/* BlueprintJS Core CSS */
+@import "@blueprintjs/core/lib/css/blueprint.css";
+
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-color: #f9fafb;
+    --text-color: #111827;
+  }
+
+  /* 当 HTML 带有 .dark 或 .bp6-dark 时切换变量 */
+  .dark, .bp6-dark {
+    --bg-color: #0f172a;
+    --text-color: #f3f4f6;
+    color-scheme: dark;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+  }
+
+  /* 确保 Blueprint 组件在深色模式下有正确的对比度 */
+  .bp6-dark {
+    color: #f5f8fa;
+  }
+}
+
+/* 适配 Tailwind 的 dark 修饰符 */
+@variant dark (&:where(.dark, .dark *));
