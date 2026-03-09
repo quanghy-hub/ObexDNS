@@ -84,7 +84,7 @@
     "apple": "Apple",
     "appleTitle": "macOS / iOS / iPadOS",
     "appleDesc": "Apple 裝置支援透過設定描述檔快速設定。",
-    "appleWarning": "設定描述檔不可在 \"鎖定模式 (Lockdown Mode)\" 下安裝，安裝前請確認系統不處於相關狀態。",
+    "appleWarning": "設定描述檔不可在 \"封閉模式 (Lockdown Mode)\" 下安裝，安裝前請確認系統不處於相關狀態。",
     "downloadConfig": "下載設定描述檔",
     "appleInstallHint": "下載後請前往「設定」>「已下載的設定描述檔」進行安裝",
     "windows": "Windows",
