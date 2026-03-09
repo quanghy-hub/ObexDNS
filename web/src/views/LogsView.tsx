@@ -21,7 +21,18 @@ import {
   Switch,
   Card,
 } from "@blueprintjs/core";
-import { Globe, Activity, Edit3, Filter, Calendar, ShieldCheck, ShieldAlert, ArrowRight, MapPin, User } from "lucide-react";
+import {
+  Globe,
+  Activity,
+  Edit3,
+  Filter,
+  Calendar,
+  ShieldCheck,
+  ShieldAlert,
+  ArrowRight,
+  MapPin,
+  User,
+} from "lucide-react";
 import { clsx } from "clsx";
 import { useTranslation } from "react-i18next";
 
@@ -249,13 +260,13 @@ export const LogsView: React.FC<LogsViewProps> = ({
             <h2 className="bp6-heading flex items-center gap-2 text-xl md:text-2xl">
               {t("logs.title")}{" "}
               <Tag minimal round>
-                {range === "custom" ? t("analytics.custom") : range.toUpperCase()}
+                {range === "custom"
+                  ? t("analytics.custom")
+                  : range.toUpperCase()}
               </Tag>
             </h2>
             {!isMobile && (
-              <p className="bp6-text-muted">
-                {t("logs.subtitle")}
-              </p>
+              <p className="bp6-text-muted">{t("logs.subtitle")}</p>
             )}
           </div>
 
@@ -598,7 +609,10 @@ export const LogsView: React.FC<LogsViewProps> = ({
                     }
                     bold
                   />
-                  <DetailItem label={t("logs.detailType")} value={selectedLog.record_type} />
+                  <DetailItem
+                    label={t("logs.detailType")}
+                    value={selectedLog.record_type}
+                  />
                   <DetailItem
                     label={t("logs.detailLatency")}
                     value={
@@ -630,6 +644,10 @@ export const LogsView: React.FC<LogsViewProps> = ({
                       </Tag>
                     }
                   />
+                  <DetailItem
+                    label={t("logs.detailUpstream")}
+                    value={selectedLog.upstream || "-"}
+                  ></DetailItem>
                   <DetailItem
                     label={t("logs.detailReason")}
                     value={selectedLog.reason || t("logs.detailNoReason")}

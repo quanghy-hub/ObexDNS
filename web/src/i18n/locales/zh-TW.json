@@ -185,6 +185,7 @@
     "detailLatency": "耗時",
     "detailProfile": "所用設定檔",
     "detailStatus": "狀態",
+    "detailUpstream": "上游伺服器",
     "detailReason": "原因",
     "detailNoReason": "無 (已允許)",
     "resolutionResult": "解析結果",
