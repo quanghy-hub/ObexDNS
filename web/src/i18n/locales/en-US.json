@@ -186,6 +186,7 @@
     "detailProfile": "Profile Used",
     "detailStatus": "Status",
     "detailReason": "Reason",
+    "detailUpstream": "Upstream",
     "detailNoReason": "None (Released)",
     "resolutionResult": "Resolution Result",
     "noResult": "No Result",

@@ -75,7 +75,7 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
       const days = newSettings.log_retention_days || 30;
       const threshold = Math.floor(Date.now() / 1000 - (days * 24 * 3600));
       ctx.waitUntil(logModel.cleanup(profileId, threshold));
-      pipeline.clearCache(profileId);
+      await pipeline.clearCache(profileId);
       return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -261,14 +261,14 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
         const { url: listUrl } = await request.json() as { url: string };
         await profileModel.addList(profileId, listUrl);
         ctx.waitUntil(syncProfileLists(profileId, env, ctx));
-        pipeline.clearCache(profileId);
+        ctx.waitUntil(pipeline.clearCache(profileId));
         return new Response(null, { status: 201 });
       }
       if (request.method === 'DELETE') {
         const { id } = await request.json() as { id: number };
         await profileModel.deleteList(id, profileId);
         ctx.waitUntil(syncProfileLists(profileId, env, ctx));
-        pipeline.clearCache(profileId);
+        ctx.waitUntil(pipeline.clearCache(profileId));
         return new Response(null, { status: 204 });
       }
     }
@@ -276,8 +276,8 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
     // 子资源路由: /api/profiles/:id/rules
     if (pathParts[3] === 'rules') {
       if (request.method === 'GET') { const results = await profileModel.getRules(profileId); return new Response(JSON.stringify(results), { headers: { 'Content-Type': 'application/json' } }); }
-      if (request.method === 'POST') { const rule = await request.json() as any; await profileModel.addRule(profileId, rule); pipeline.clearCache(profileId); return new Response(null, { status: 201 }); }
-      if (request.method === 'DELETE') { const { id } = await request.json() as any; await profileModel.deleteRule(id, profileId); pipeline.clearCache(profileId); return new Response(null, { status: 204 }); }
+      if (request.method === 'POST') { const rule = await request.json() as any; await profileModel.addRule(profileId, rule); ctx.waitUntil(pipeline.clearCache(profileId)); return new Response(null, { status: 201 }); }
+      if (request.method === 'DELETE') { const { id } = await request.json() as any; await profileModel.deleteRule(id, profileId); ctx.waitUntil(pipeline.clearCache(profileId)); return new Response(null, { status: 204 }); }
     }
   }
 

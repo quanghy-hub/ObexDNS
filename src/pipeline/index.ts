@@ -28,10 +28,19 @@ const dnsCache = new Map<string, DNSCacheEntry>();
 const CACHE_TTL_MS = 1800000; // 30分钟
 
 export const pipeline = {
-  clearCache(profileId: string) {
+  async clearCache(profileId: string) {
     configCache.delete(profileId);
     for (const key of dnsCache.keys()) {
       if (key.startsWith(`${profileId}:`)) dnsCache.delete(key);
+    }
+    
+    // 清理 Cache API 中的配置
+    try {
+      const cache = (caches as any).default;
+      const cacheKey = `profile:${profileId}`;
+      await cacheUtils.delete(cache, cacheKey);
+    } catch (e) {
+      console.error("Failed to clear cache API:", e);
     }
   },
 
@@ -82,7 +91,7 @@ export const pipeline = {
       bloom = cachedConfig.bloom;
       track('load_config_mem');
     } else {
-      const cacheKey = `profile_v5:${context.profileId}`;
+      const cacheKey = `profile:${context.profileId}`;
       const apiCached = await cacheUtils.get<any>(cache, cacheKey);
       
       if (apiCached) {
