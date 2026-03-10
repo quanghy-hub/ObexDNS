@@ -136,7 +136,7 @@ npm run deploy
 
 ---
 
-## 🤓 Powered by
+## 💪 Powered by
 
 * [Cloudflare Workers](https://workers.cloudflare.com/)
 * [Blueprint](https://github.com/palantir/blueprint) (at Palantir)
