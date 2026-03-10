@@ -32,10 +32,6 @@
   },
   "dependencies": {
     "@lucia-auth/adapter-sqlite": "^3.0.2",
-    "@oslojs/crypto": "^1.0.1",
-    "@oslojs/encoding": "^1.1.0",
-    "lucia": "^3.2.2",
-    "oslo": "^1.2.1",
-    "recharts": "^3.7.0"
+    "lucia": "^3.2.2"
   }
 }

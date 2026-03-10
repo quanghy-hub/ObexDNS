@@ -124,6 +124,16 @@ npm run deploy
 
 ---
 
+## 🤓 感谢
+
+* [Cloudflare Workers](https://workers.cloudflare.com/)
+* [Blueprint](https://github.com/palantir/blueprint) (at Palantir)
+* [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss)
+* [React](https://github.com/facebook/react)
+
+---
+
 ## 📄 开源协议
 
 本项目采用 [AGPLv3](LICENSE) 协议授权。
+

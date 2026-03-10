@@ -115,6 +115,15 @@ npm run deploy
 
 ---
 
+## 🤓 Powered by
+
+* [Cloudflare Workers](https://workers.cloudflare.com/)
+* [Blueprint](https://github.com/palantir/blueprint) (at Palantir)
+* [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss)
+* [React](https://github.com/facebook/react)
+
+---
+
 ## 📄 License
 
 This project is licensed under the [AGPLv3](LICENSE) License.
