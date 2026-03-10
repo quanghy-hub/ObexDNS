@@ -144,7 +144,7 @@ npm run deploy
 
 ---
 
-## 🤓 感谢
+## 💪 感谢
 
 * [Cloudflare Workers](https://workers.cloudflare.com/)
 * [Blueprint](https://github.com/palantir/blueprint) (at Palantir)
