@@ -15,6 +15,7 @@ import {
   Icon,
   Menu,
   MenuItem,
+  Popover,
 } from "@blueprintjs/core";
 import { useTranslation } from "react-i18next";
 import {
@@ -116,13 +117,26 @@ const DashboardHome = ({
               text={isMobile ? "" : t("common.account")}
               onClick={() => navigate("/account")}
             />
-            <Button
-              variant="minimal"
-              intent={Intent.DANGER}
-              icon={<LogOut size={18} />}
-              text={isMobile ? "" : t("common.logout")}
-              onClick={handleLogout}
-            />
+            <Popover
+              content={
+                <div className="p-4 space-y-3">
+                  <div className="font-bold text-sm">{t("common.confirmLogout")}</div>
+                  <Button
+                    fill
+                    intent={Intent.DANGER}
+                    text={t("common.logout")}
+                    onClick={handleLogout}
+                  />
+                </div>
+              }
+            >
+              <Button
+                variant="minimal"
+                intent={Intent.DANGER}
+                icon={<LogOut size={18} />}
+                text={isMobile ? "" : t("common.logout")}
+              />
+            </Popover>
           </div>
         </div>
       </div>
@@ -162,6 +176,7 @@ const DashboardHome = ({
                   intent={Intent.SUCCESS}
                   onClick={onCreate}
                   text={t("common.create")}
+                  className="whitespace-nowrap"
                 />
                 <Button
                   variant="minimal"
@@ -338,12 +353,29 @@ const MainLayout = ({
                 active={location.pathname === "/account"}
                 onClick={() => navigate("/account")}
               />
-              <MenuItem
-                icon={<LogOut size={18} />}
-                text={isSidebarOpen ? t("common.logout") : ""}
-                intent={Intent.DANGER}
-                onClick={handleLogout}
-              />
+              <Popover
+                position="right-bottom"
+                content={
+                  <div className="p-4 space-y-3">
+                    <div className="font-bold text-sm">
+                      {t("common.confirmLogout")}
+                    </div>
+                    <Button
+                      fill
+                      intent={Intent.DANGER}
+                      text={t("common.logout")}
+                      onClick={handleLogout}
+                    />
+                  </div>
+                }
+              >
+                <MenuItem
+                  icon={<LogOut size={18} />}
+                  text={isSidebarOpen ? t("common.logout") : ""}
+                  intent={Intent.DANGER}
+                  shouldDismissPopover={false}
+                />
+              </Popover>
             </Menu>
           </div>
           <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">

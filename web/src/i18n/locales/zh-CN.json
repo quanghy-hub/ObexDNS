@@ -11,6 +11,7 @@
     "loading": "加载中...",
     "errorNetwork": "网络错误",
     "confirmDelete": "确定要删除此配置吗？",
+    "confirmLogout": "确定登出？",
     "notFound": "404 - 页面未找到",
     "notFoundDesc": "您尝试访问的页面不存在或已被移除。",
     "backToHome": "返回首页",
@@ -313,7 +314,9 @@
     "confirmDeleteUser": "确定要删除此用户吗？其拥有的所有配置也将被移除。",
     "confirmClearLogs": "确定要清空您名下所有配置的查询日志吗？此操作不可撤销。",
     "clearLogsSuccess": "日志已成功清空",
-    "confirmDeleteAccount": "警告：确定要注销并删除本账号吗？\n\n阁下所有 DNS 配置、自定义规则和查询日志将被永久删除。此操作不可逆！"
+    "confirmDeleteAccount": "警告：确定要注销并删除本账号吗？\n\n阁下所有 DNS 配置、自定义规则和查询日志将被永久删除。此操作不可逆！",
+    "inactivityPolicy": "活跃度政策",
+    "inactivityDesc": "为节省资源，180 天内无任何解析活动的账号将被自动清理，包括其配置与所有关联日志。"
   },
   "intro": {
     "item1Title": "Obex 保护性 DNS",

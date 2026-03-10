@@ -73,9 +73,26 @@ export default {
       const context: Context = { profileId, startTime: Date.now(), env, ctx };
       const result = await pipeline.process(request, query, context);
 
-      // 优化：使用 Cache API 替代 KV 记录活跃连接，减少计费操作
-      const clientIp = request.headers.get("CF-Connecting-IP") || "127.0.0.1";
-      ctx.waitUntil(cacheUtils.set(cache, `active_dns:${clientIp}`, profileId, 60));
+      // 异步处理：记录活跃连接与更新活跃时间 (Throttled)
+      ctx.waitUntil((async () => {
+        const clientIp = request.headers.get("CF-Connecting-IP") || "127.0.0.1";
+        // 1. 记录活跃连接（用于 Debug 页面）
+        await cacheUtils.set(cache, `active_dns:${clientIp}`, profileId, 60);
+
+        // 2. 记录账号/配置活跃时间 (每小时节流一次)
+        const nowSec = Math.floor(Date.now() / 1000);
+        const lastActiveKey = `active_throttle:${profileId}`;
+        const lastActiveThrottled = await cacheUtils.get<number>(cache, lastActiveKey);
+        
+        if (!lastActiveThrottled || nowSec - lastActiveThrottled > 3600) {
+          // 更新 Profile 活跃时间
+          await env.DB.prepare("UPDATE profiles SET last_active_at = ? WHERE id = ?").bind(nowSec, profileId).run();
+          // 级联更新 Owner 活跃时间
+          await env.DB.prepare("UPDATE users SET last_active_at = ? WHERE id = (SELECT owner_id FROM profiles WHERE id = ?)").bind(nowSec, profileId).run();
+          // 写入节流标记
+          await cacheUtils.set(cache, lastActiveKey, nowSec, 3600);
+        }
+      })());
 
       return new Response(result.answer as any, {
         headers: {
@@ -99,8 +116,17 @@ export default {
 
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     const logModel = new LogModel(env.DB);
+    const now = Math.floor(Date.now() / 1000);
+    const inactivityThreshold = now - (180 * 24 * 3600); // 180 天
     
-    // 获取所有配置的留存天数
+    // 清理 180 天无活动的普通用户 (级联删除其所有 Profile、规则和日志)
+    try {
+      await env.DB.prepare("DELETE FROM users WHERE role = 'user' AND last_active_at < ?").bind(inactivityThreshold).run();
+    } catch (e) {
+      console.error("[Cleanup] Failed to delete inactive users:", e);
+    }
+
+    // 原有的日志清理逻辑
     const { results: profiles } = await env.DB.prepare("SELECT id, settings FROM profiles").all<{id: string, settings: string}>();
     
     for (const profile of profiles) {

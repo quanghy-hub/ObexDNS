@@ -326,27 +326,29 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <H5 className="flex items-center gap-2 mb-4 font-bold">
             <Clock size={18} className="text-purple-500" /> {t("settings.logRetentionTitle")}
           </H5>
-          <FormGroup label={t("settings.retentionDuration")}>
-            <HTMLSelect
-              fill
-              value={settings.log_retention_days}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  log_retention_days: parseFloat(e.target.value),
-                })
-              }
-            >
-              {LOG_RETENTION_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </HTMLSelect>
-          </FormGroup>
-          <p className="text-xs opacity-60">
-            {t("settings.retentionDesc")}
-          </p>
+          <div className="space-y-4">
+            <FormGroup label={t("settings.retentionDuration")}>
+              <HTMLSelect
+                fill
+                value={settings.log_retention_days}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    log_retention_days: parseFloat(e.target.value),
+                  })
+                }
+              >
+                {LOG_RETENTION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </HTMLSelect>
+            </FormGroup>
+            <p className="text-xs opacity-60">
+              {t("settings.retentionDesc")}
+            </p>
+          </div>
         </Card>
 
         {/* 高级设置 */}

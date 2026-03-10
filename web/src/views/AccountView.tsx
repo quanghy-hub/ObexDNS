@@ -278,10 +278,10 @@ export const AccountView: React.FC = () => {
                 <ShieldCheck size={20} className="text-red-500" />
                 <H4 style={{margin: 0}}>{t("account.userManagement")}</H4>
               </div>
-              <Button icon={<UserPlus size={16}/>} intent={Intent.SUCCESS} text={t("account.createUser")} onClick={() => setIsDialogOpen(true)} />
+              <Button className="whitespace-nowrap" icon={<UserPlus size={16}/>} intent={Intent.SUCCESS} text={t("account.createUser")} onClick={() => setIsDialogOpen(true)} />
             </div>
 
-            <Card elevation={Elevation.ONE} className="p-0 overflow-hidden">
+            <Card elevation={Elevation.ONE} className="p-0 overflow-hidden overflow-x-auto">
               <HTMLTable interactive striped className="w-full">
                 <thead>
                   <tr>
@@ -360,6 +360,12 @@ export const AccountView: React.FC = () => {
             </Card>
           )}
         </div>
+
+        <Callout intent={Intent.WARNING} icon="info-sign" title={t("accout.inactivityPolicy", "活跃度政策")}>
+          <p className="text-sm">
+            {t("accout.inactivityDesc", "为节省资源，180 天内无任何解析活动的账号将被自动清理，包括其配置与所有关联日志。")}
+          </p>
+        </Callout>
       </div>
 
       <Dialog

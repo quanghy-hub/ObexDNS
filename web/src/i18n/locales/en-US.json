@@ -11,6 +11,7 @@
     "loading": "Loading...",
     "errorNetwork": "Network Error",
     "confirmDelete": "Are you sure you want to delete this profile?",
+    "confirmLogout": "Sure to logout?",
     "notFound": "404 - Page Not Found",
     "notFoundDesc": "The page you are trying to access does not exist or has been removed.",
     "backToHome": "Back to Home",
@@ -200,8 +201,8 @@
     "statusPass": "Allowed",
     "statusBlock": "Blocked",
     "statusRedirect": "Redirected"
-    },
-    "filtering": {
+  },
+  "filtering": {
     "title": "External Filter Lists",
     "subtitle": "Subscribe to third-party maintained domain blocklists (e.g., AdGuard, etc.).",
     "syncAll": "Sync All Lists",
@@ -223,8 +224,8 @@
     "presetOisdNsfw": "OISD NSFW (Porn/Shock/Adult content)",
     "presetAdGuard": "AdGuard AdServers",
     "presetStevenBlack": "StevenBlack Hosts (General blocklist)"
-    },
-    "settings": {
+  },
+  "settings": {
     "title": "Profile Settings",
     "subtitle": "Manage your DNS resolution policy and advanced options.",
     "saveChanges": "Save All Changes",
@@ -276,8 +277,8 @@
     "retention180d": "180 Days",
     "retention360d": "360 Days",
     "retention720d": "720 Days (Max)"
-    },
-    "account": {
+  },
+  "account": {
     "title": "Account Settings",
     "subtitle": "Manage your security credentials and system users.",
     "roleAdmin": "System Admin",
@@ -313,24 +314,26 @@
     "confirmDeleteUser": "Are you sure you want to delete this user? All configurations owned by them will also be removed.",
     "confirmClearLogs": "Are you sure you want to clear query logs for all your profiles? This action cannot be undone.",
     "clearLogsSuccess": "Logs cleared successfully",
-    "confirmDeleteAccount": "WARNING: Are you sure you want to delete this account?\n\nAll your DNS configurations, custom rules, and query logs will be permanently deleted. This action is irreversible!"
-    },
-    "intro": {
-      "item1Title": "Obex Protective DNS",
-      "item1Desc": "A high-performance resolver based on Cloudflare Workers & D1, built for speed and security.",
-      "item2Title": "Privacy over DoH",
-      "item2Desc": "Prevent hijacking and enhance privacy with DNS over HTTPS (RFC 8484) encrypted tunnels.",
-      "item3Title": "Global Edge Network",
-      "item3Desc": "Experience ultra-fast resolution with 0ms-class latency thanks to Cloudflare's massive edge network.",
-      "item4Title": "Granular Filtering",
-      "item4Desc": "Full support for Allow/Block lists, AdGuard rules, and custom DNS record redirections.",
-      "item5Title": "Real-time Analytics",
-      "item5Desc": "Visualize your network health with detailed query logs and comprehensive statistics dashboards.",
-      "item6Title": "Modern UI & Dark Mode",
-      "item6Desc": "A high-density management panel designed for engineers and home users alike, based on Blueprint UI developed at Palantir.",
-      "item7Title": "Cloud-Native Infrastructure",
-      "item7Desc": "Serverless architecture ensures zero maintenance and infinite scalability for your private DNS.",
-      "item8Title": "Multi-Profile Management",
-      "item8Desc": "Create and manage multiple configurations for different devices or network environments."
-    }
-    }
+    "confirmDeleteAccount": "WARNING: Are you sure you want to delete this account?\n\nAll your DNS configurations, custom rules, and query logs will be permanently deleted. This action is irreversible!",
+    "inactivityPolicy": "Inactivity Policy",
+    "inactivityDesc": "To save resources, accounts with no DNS activity in the last 180 days will be automatically cleaned up, including their configurations and all associated logs."
+  },
+  "intro": {
+    "item1Title": "Obex Protective DNS",
+    "item1Desc": "A high-performance resolver based on Cloudflare Workers & D1, built for speed and security.",
+    "item2Title": "Privacy over DoH",
+    "item2Desc": "Prevent hijacking and enhance privacy with DNS over HTTPS (RFC 8484) encrypted tunnels.",
+    "item3Title": "Global Edge Network",
+    "item3Desc": "Experience ultra-fast resolution with 0ms-class latency thanks to Cloudflare's massive edge network.",
+    "item4Title": "Granular Filtering",
+    "item4Desc": "Full support for Allow/Block lists, AdGuard rules, and custom DNS record redirections.",
+    "item5Title": "Real-time Analytics",
+    "item5Desc": "Visualize your network health with detailed query logs and comprehensive statistics dashboards.",
+    "item6Title": "Modern UI & Dark Mode",
+    "item6Desc": "A high-density management panel designed for engineers and home users alike, based on Blueprint UI developed at Palantir.",
+    "item7Title": "Cloud-Native Infrastructure",
+    "item7Desc": "Serverless architecture ensures zero maintenance and infinite scalability for your private DNS.",
+    "item8Title": "Multi-Profile Management",
+    "item8Desc": "Create and manage multiple configurations for different devices or network environments."
+  }
+}

@@ -19,9 +19,23 @@
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/ObexDNS/ObexDNS)
 
+### 什么是 DNS over HTTPS (DoH)？
+
+DoH (RFC 8484) 是一种通过加密的 HTTPS 连接进行 DNS 查询的协议。与传统明文 DNS 相比，DoH 能够：
+
+- **防止劫持**：防止 ISP 或第三方篡改 DNS 响应。
+- **增强隐私**：通过加密隧道隐藏您的浏览记录。
+- **绕过审查**：在受限网络环境下提供更稳定的解析服务。
+
+---
+
 ## 🖼️ 界面预览
 
-| 安装引导 | 实时日志 |
+| 用户登录 | 
+|:---:|
+| ![用户登录](docs/screenshots/dns.obex-login.png) | 
+
+| 安装引导 | 分析统计 |
 |:---:|:---:|
 | ![设置引导](docs/screenshots/dns.obex-setup.png) | ![统计分析](docs/screenshots/dns.obex-stats.JPG) |
 
@@ -32,14 +46,6 @@
 | 配置选项 | 配置选择 |
 |:---:|:---:|
 | ![高级设置](docs/screenshots/dns.obex-settings.png) | ![配置选择](docs/screenshots/dns.obex-profile_select.png) |
-
-### 什么是 DNS over HTTPS (DoH)？
-
-DoH (RFC 8484) 是一种通过加密的 HTTPS 连接进行 DNS 查询的协议。与传统明文 DNS 相比，DoH 能够：
-
-- **防止劫持**：防止 ISP 或第三方篡改 DNS 响应。
-- **增强隐私**：通过加密隧道隐藏您的浏览记录。
-- **绕过审查**：在受限网络环境下提供更稳定的解析服务。
 
 ---
 
