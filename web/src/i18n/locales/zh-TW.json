@@ -327,7 +327,7 @@
     "item5Title": "即時統計分析",
     "item5Desc": "透過詳細的查詢日誌和綜合統計儀表板，直觀呈現網路健康狀況。",
     "item6Title": "現代化 UI 與深色模式",
-    "item6Desc": "為工程師和家庭使用者設計的高密度管理面板。",
+    "item6Desc": "為工程師和家庭使用者設計的高密度管理面板，基於由 Palantir 開發的 Blueprint UI",
     "item7Title": "雲端原生基礎架構",
     "item7Desc": "無伺服器架構確保零維護和私人 DNS 的無限擴充性。",
     "item8Title": "多設定檔管理",

@@ -327,7 +327,7 @@
     "item5Title": "实时统计分析",
     "item5Desc": "通过详细的查询日志和综合统计仪表盘，直观展现网络健康状况。",
     "item6Title": "现代 UI 与暗黑模式",
-    "item6Desc": "为工程师和家庭用户设计的高密度管理面板。",
+    "item6Desc": "为工程师和家庭用户设计的高密度管理面板，基于由 Palantir 开发的 Blueprint UI。",
     "item7Title": "云原生基础架构",
     "item7Desc": "无服务器架构确保零维护和私人 DNS 的无限扩展性。",
     "item8Title": "多配置管理",

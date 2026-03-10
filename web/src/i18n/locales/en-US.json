@@ -327,7 +327,7 @@
       "item5Title": "Real-time Analytics",
       "item5Desc": "Visualize your network health with detailed query logs and comprehensive statistics dashboards.",
       "item6Title": "Modern UI & Dark Mode",
-      "item6Desc": "A high-density management panel designed for engineers and home users alike.",
+      "item6Desc": "A high-density management panel designed for engineers and home users alike, based on Blueprint UI developed at Palantir.",
       "item7Title": "Cloud-Native Infrastructure",
       "item7Desc": "Serverless architecture ensures zero maintenance and infinite scalability for your private DNS.",
       "item8Title": "Multi-Profile Management",
