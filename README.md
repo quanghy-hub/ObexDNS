@@ -43,7 +43,7 @@ DoH (RFC 8484) is a protocol for performing DNS queries via encrypted HTTPS conn
 
 | Resolution Logs | Log Detail |
 |:---:|:---:|
-| ![Resolution Logs](docs/screenshots/dns.obex-log.jpeg) | ![Log Detail](docs/screenshots/dns.obex-log_detail.jpeg) |
+| ![Resolution Logs](docs/screenshots/dns.obex-log.jpg) | ![Log Detail](docs/screenshots/dns.obex-log_detail.jpg) |
 
 | Profile Settings | Profile Select |
 |:---:|:---:|
