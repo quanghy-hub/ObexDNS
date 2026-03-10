@@ -25,10 +25,10 @@ export const pipelineResolver = {
         headers: { "Accept": "application/dns-message", "User-Agent": "Obex-DNS/1.0" }
       });
 
-      if (!response.ok) return { 
-        answer: new Uint8Array(), 
-        ttl: 0, 
-        action: "FAIL", 
+      if (!response.ok) return {
+        answer: new Uint8Array(),
+        ttl: 0,
+        action: "FAIL",
         reason: `Upstream HTTP ${response.status}`,
         diagnostics: {
           upstream_url: targetUrl.toString(),
@@ -74,12 +74,12 @@ export const pipelineResolver = {
         });
       })());
 
-      return { 
-        answer, 
-        ttl: minTTL, 
-        action, 
-        reason, 
-        latency: Date.now() - context.startTime, 
+      return {
+        answer,
+        ttl: minTTL,
+        action,
+        reason,
+        latency: Date.now() - context.startTime,
         timings: { upstream_fetch: upstreamLatency },
         diagnostics: {
           upstream_url: targetUrl.toString(),
@@ -88,10 +88,10 @@ export const pipelineResolver = {
         }
       };
     } catch (e: any) {
-      return { 
-        answer: new Uint8Array(), 
-        ttl: 0, 
-        action: "FAIL", 
+      return {
+        answer: new Uint8Array(),
+        ttl: 0,
+        action: "FAIL",
         reason: `Net Error: ${e.message}`,
         diagnostics: {
           upstream_url: targetUrl.toString(),
@@ -106,10 +106,15 @@ export const pipelineResolver = {
     const logModel = new LogModel(context.env.DB);
     const clientIp = request.headers.get("CF-Connecting-IP") || "127.0.0.1";
     const answer = new Uint8Array(query.raw);
-    
-    // 如果是 BLOCK，设置 RCODE 为 NXDOMAIN (0x8183)
+
+    // 如果是 BLOCK，RCODE=3 (NXDOMAIN)
     if (action === 'BLOCK') {
-      answer[2] = 0x81; answer[3] = 0x83;
+      answer[2] = (answer[2] | 0x80); // QR = 1
+      answer[3] = 0x83; // RA=1, RCODE=3
+      answer[6] = 0;
+      answer[7] = 0;
+      answer[8] = 0; answer[9] = 0; // NSCOUNT = 0
+      answer[10] = 0; answer[11] = 0; // ARCOUNT = 0
     }
 
     const latency = Date.now() - context.startTime;
