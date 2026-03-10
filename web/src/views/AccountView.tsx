@@ -361,9 +361,9 @@ export const AccountView: React.FC = () => {
           )}
         </div>
 
-        <Callout intent={Intent.WARNING} icon="info-sign" title={t("accout.inactivityPolicy", "活跃度政策")}>
+        <Callout intent={Intent.WARNING} icon="info-sign" title={t("account.inactivityPolicy")}>
           <p className="text-sm">
-            {t("accout.inactivityDesc", "为节省资源，180 天内无任何解析活动的账号将被自动清理，包括其配置与所有关联日志。")}
+            {t("account.inactivityDesc")}
           </p>
         </Callout>
       </div>
