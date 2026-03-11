@@ -138,7 +138,15 @@ export const SetupView: React.FC<SetupViewProps> = ({
       setDebugInfo(debugData);
 
       if (debugData.regions) {
-        setServerRegions(debugData.regions);
+        const enriched: Record<string, RegionConfigItem> = {};
+        for (const [key, ips] of Object.entries(debugData.regions)) {
+          enriched[key] = {
+            label: presetRegions[key]?.label || key,
+            countries: presetRegions[key]?.countries || [],
+            ips: ips as any
+          };
+        }
+        setServerRegions(enriched);
       }
 
       // 自动推荐地区逻辑

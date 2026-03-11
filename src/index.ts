@@ -27,6 +27,18 @@ export default {
       const clientIp = request.headers.get("CF-Connecting-IP") || "127.0.0.1";
       const connectedProfileId = await cacheUtils.get<string>(cache, `active_dns:${clientIp}`);
       const cf = (request as any).cf;
+      
+      // 提取地区配置变量
+      const regions: Record<string, any> = {};
+      for (const [key, value] of Object.entries(env)) {
+        if (key.startsWith('IP_REGION_') && typeof value === 'string') {
+          try {
+            const regionKey = key.replace('IP_REGION_', '');
+            regions[regionKey] = JSON.parse(value.trim().replace(/^'|'$/g, ""));
+          } catch (e) {}
+        }
+      }
+
       return new Response(JSON.stringify({
         ip: clientIp,
         country: cf?.country || "UNKNOWN",
@@ -34,6 +46,7 @@ export default {
         asn: cf?.asn || 0,
         asOrganization: cf?.asOrganization || "UNKNOWN",
         connectedProfileId: connectedProfileId || null,
+        regions
       }), { headers: { 'Content-Type': 'application/json' } });
     }
 

@@ -98,7 +98,7 @@
     "androidTitle": "Android 9+",
     "androidDesc": "Recommended to use apps like Intra and manually enter the DoH URL.",
     "androidWarning": "Note: Native 'Private DNS' uses DoT, this project currently only supports DoH.",
-    "dynamicFromPagesDev": "Dynamic (from \"pages.dev\")",
+    "dynamicFromPagesDev": "Dynamic (by \"pages.dev\")",
     "dynamicFromPagesDevV6": "Dynamic IPv6 (by \"pages.dev\")"
   },
   "rules": {
