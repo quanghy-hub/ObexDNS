@@ -67,39 +67,48 @@ export default {
     // DoH 解析路由: /<6位ID>
     const profileIdMatch = url.pathname.match(/^\/([a-zA-Z0-9]{6})$/);
     if (profileIdMatch) {
-      const profileId = profileIdMatch[1];
-      const query = await parseDNSQuery(request);
-      if (!query) return new Response('Invalid DNS Query', { status: 400 });
-      const context: Context = { profileId, startTime: Date.now(), env, ctx };
-      const result = await pipeline.process(request, query, context);
+      try {
+        const profileId = profileIdMatch[1];
+        const query = await parseDNSQuery(request);
+        if (!query) return new Response('Invalid DNS Query', { status: 400 });
+        const context: Context = { profileId, startTime: Date.now(), env, ctx };
+        const result = await pipeline.process(request, query, context);
 
-      // 异步处理：记录活跃连接与更新活跃时间 (Throttled)
-      ctx.waitUntil((async () => {
-        const clientIp = request.headers.get("CF-Connecting-IP") || "127.0.0.1";
-        // 1. 记录活跃连接（用于 Debug 页面）
-        await cacheUtils.set(cache, `active_dns:${clientIp}`, profileId, 60);
+        // 异步处理：记录活跃连接与更新活跃时间 (Throttled)
+        ctx.waitUntil((async () => {
+          try {
+            const clientIp = request.headers.get("CF-Connecting-IP") || "127.0.0.1";
+            // 1. 记录活跃连接（用于 Debug 页面）
+            await cacheUtils.set(cache, `active_dns:${clientIp}`, profileId, 60);
 
-        // 2. 记录账号/配置活跃时间 (每小时节流一次)
-        const nowSec = Math.floor(Date.now() / 1000);
-        const lastActiveKey = `active_throttle:${profileId}`;
-        const lastActiveThrottled = await cacheUtils.get<number>(cache, lastActiveKey);
-        
-        if (!lastActiveThrottled || nowSec - lastActiveThrottled > 3600) {
-          // 更新 Profile 活跃时间
-          await env.DB.prepare("UPDATE profiles SET last_active_at = ? WHERE id = ?").bind(nowSec, profileId).run();
-          // 级联更新 Owner 活跃时间
-          await env.DB.prepare("UPDATE users SET last_active_at = ? WHERE id = (SELECT owner_id FROM profiles WHERE id = ?)").bind(nowSec, profileId).run();
-          // 写入节流标记
-          await cacheUtils.set(cache, lastActiveKey, nowSec, 3600);
-        }
-      })());
+            // 2. 记录账号/配置活跃时间 (每小时节流一次)
+            const nowSec = Math.floor(Date.now() / 1000);
+            const lastActiveKey = `active_throttle:${profileId}`;
+            const lastActiveThrottled = await cacheUtils.get<number>(cache, lastActiveKey);
+            
+            if (!lastActiveThrottled || nowSec - lastActiveThrottled > 3600) {
+              // 更新 Profile 活跃时间
+              await env.DB.prepare("UPDATE profiles SET last_active_at = ? WHERE id = ?").bind(nowSec, profileId).run();
+              // 级联更新 Owner 活跃时间
+              await env.DB.prepare("UPDATE users SET last_active_at = ? WHERE id = (SELECT owner_id FROM profiles WHERE id = ?)").bind(nowSec, profileId).run();
+              // 写入节流标记
+              await cacheUtils.set(cache, lastActiveKey, nowSec, 3600);
+            }
+          } catch (e) {
+            console.error(`[Background Task] Error for ${profileId}:`, e);
+          }
+        })());
 
-      return new Response(result.answer as any, {
-        headers: {
-          'Content-Type': 'application/dns-message',
-          'Cache-Control': `max-age=${result.ttl}`
-        }
-      });
+        return new Response(result.answer as any, {
+          headers: {
+            'Content-Type': 'application/dns-message',
+            'Cache-Control': `max-age=${result.ttl}`
+          }
+        });
+      } catch (e: any) {
+        console.error(`[DoH Pipeline] Internal Error:`, e);
+        return new Response(`Internal Server Error: ${e.message}`, { status: 500 });
+      }
     }
 
     // 静态资源托管与 SPA 回退

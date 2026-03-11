@@ -41,27 +41,32 @@ function decodeName(buffer: Uint8Array, offset: number): { name: string; read: n
 }
 
 export async function parseDNSQuery(request: Request): Promise<DNSQuery | null> {
-  let raw: Uint8Array;
-
-  if (request.method === "GET") {
-    const url = new URL(request.url);
-    const dnsParam = url.searchParams.get("dns");
-    if (!dnsParam) return null;
-
-    const base64 = dnsParam.replace(/-/g, "+").replace(/_/g, "/");
-    const binary = atob(base64);
-    raw = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      raw[i] = binary.charCodeAt(i);
-    }
-  } else if (request.method === "POST") {
-    const buffer = await request.arrayBuffer();
-    raw = new Uint8Array(buffer);
-  } else {
-    return null;
-  }
-
   try {
+    let raw: Uint8Array;
+
+    if (request.method === "GET") {
+      const url = new URL(request.url);
+      const dnsParam = url.searchParams.get("dns");
+      if (!dnsParam) return null;
+
+      // 补齐 Base64 填充符号并处理 URL-safe 字符
+      let base64 = dnsParam.replace(/-/g, "+").replace(/_/g, "/");
+      while (base64.length % 4) base64 += '=';
+      
+      const binary = atob(base64);
+      raw = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        raw[i] = binary.charCodeAt(i);
+      }
+    } else if (request.method === "POST") {
+      const buffer = await request.arrayBuffer();
+      raw = new Uint8Array(buffer);
+    } else {
+      return null;
+    }
+
+    if (raw.length < 12) return null;
+
     // 使用新的 decodeName 替代旧的解析函数
     const { name, read } = decodeName(raw, 12);
     const qtypeOffset = 12 + read;
