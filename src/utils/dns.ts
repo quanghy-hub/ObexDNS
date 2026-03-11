@@ -192,14 +192,44 @@ export function parseDNSAnswer(raw: Uint8Array): { type: string; data: string; t
   return results;
 }
 
-export function buildResponse(queryRaw: Uint8Array, type: string, value: string, ttl: number = 60): Uint8Array {
+export function buildResponse(queryRaw: Uint8Array, type: string, value: string, ttl: number = 60, rcode: number = 0): Uint8Array {
+  const header = new Uint8Array(12);
+  header.set(queryRaw.slice(0, 12));
+  
+  // Flags: QR=1 (Response), AA=1 (Authoritative), 保留原始 RD (Recursion Desired)
+  header[2] = (header[2] & 0x01) | 0x84; 
+  // RA=1 (Recursion Available), Z=0, RCODE
+  header[3] = 0x80 | (rcode & 0x0F);
+  
+  // 准确计算 Question Section 结束位置，以跳过可能的附加记录 (如 OPT)
+  let offset = 12;
+  const qCount = (queryRaw[4] << 8) | queryRaw[5];
+  for (let i = 0; i < qCount; i++) {
+    const { read } = decodeName(queryRaw, offset);
+    offset += read + 4; // Name + Type(2) + Class(2)
+  }
+  
+  const questionSection = queryRaw.slice(12, offset);
+  header[6] = 0; header[7] = value ? 1 : 0; // ANCOUNT
+  header[8] = 0; header[9] = 0;             // NSCOUNT
+  header[10] = 0; header[11] = 0;           // ARCOUNT (丢弃 OPT 记录)
+
+  // 如果没有具体值（如 NXDOMAIN 或 NODATA），只返回 Header + Question
+  if (!value) {
+    const res = new Uint8Array(12 + questionSection.length);
+    res.set(header);
+    res.set(questionSection, 12);
+    return res;
+  }
+
+  // 构造 Answer Section
   let data: number[] = [];
   if (type === 'A') {
     data = value.split('.').map(v => parseInt(v));
   } else if (type === 'AAAA') {
     const parts = value.split(':');
     for (const part of parts) {
-      const v = parseInt(part, 16);
+      const v = parseInt(part || "0", 16);
       data.push(v >> 8);
       data.push(v & 0xff);
     }
@@ -215,23 +245,21 @@ export function buildResponse(queryRaw: Uint8Array, type: string, value: string,
     for (let i = 0; i < value.length; i++) data.push(value.charCodeAt(i));
   }
 
-  const response = new Uint8Array(queryRaw.length + 10 + data.length);
-  response.set(queryRaw);
-  
-  response[2] = 0x85; response[3] = 0x80;
-  response[6] = 0x00; response[7] = 0x01;
-  
-  let offset = queryRaw.length;
-  response[offset++] = 0xc0; response[offset++] = 0x0c;
-  
+  const answerSection = new Uint8Array(10 + data.length);
+  let aPos = 0;
+  answerSection[aPos++] = 0xc0; answerSection[aPos++] = 0x0c; // 压缩指针指向域名
   const typeMap: Record<string, number> = { "A": 1, "AAAA": 28, "CNAME": 5, "TXT": 16 };
   const typeCode = typeMap[type] || 1;
-  response[offset++] = typeCode >> 8; response[offset++] = typeCode & 0xff;
-  response[offset++] = 0x00; response[offset++] = 0x01;
-  response[offset++] = (ttl >> 24) & 0xff; response[offset++] = (ttl >> 16) & 0xff;
-  response[offset++] = (ttl >> 8) & 0xff; response[offset++] = ttl & 0xff;
-  response[offset++] = data.length >> 8; response[offset++] = data.length & 0xff;
-  for (const b of data) response[offset++] = b;
-  
-  return response.slice(0, offset);
+  answerSection[aPos++] = typeCode >> 8; answerSection[aPos++] = typeCode & 0xff;
+  answerSection[aPos++] = 0x00; answerSection[aPos++] = 0x01; // Class IN
+  answerSection[aPos++] = (ttl >> 24) & 0xff; answerSection[aPos++] = (ttl >> 16) & 0xff;
+  answerSection[aPos++] = (ttl >> 8) & 0xff; answerSection[aPos++] = ttl & 0xff;
+  answerSection[aPos++] = data.length >> 8; answerSection[aPos++] = data.length & 0xff;
+  answerSection.set(data, aPos);
+
+  const res = new Uint8Array(12 + questionSection.length + answerSection.length);
+  res.set(header);
+  res.set(questionSection, 12);
+  res.set(answerSection, 12 + questionSection.length);
+  return res;
 }

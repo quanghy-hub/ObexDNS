@@ -111,21 +111,16 @@ export const pipelineResolver = {
     if (action === 'REDIRECT' && customAnswer) {
       answer = buildResponse(query.raw, query.type, customAnswer);
     } else {
-      // 处理拦截逻辑 (BLOCK)
+      // 处理拦截模式 (BLOCK)
       const mode = settings.block_mode || 'NULL_IP';
       
       if (mode === 'NXDOMAIN') {
-        answer = new Uint8Array(query.raw);
-        answer[2] |= 0x80; // QR=1
-        answer[3] = 0x83; // RA=1, RCODE=3 (NXDOMAIN)
-        // 确保 ANCOUNT 为 0
-        answer[6] = 0; answer[7] = 0;
+        // 返回 RCODE 3, 0 Answers
+        answer = buildResponse(query.raw, query.type, "", 3600, 3);
         displayAnswer = "NXDOMAIN";
       } else if (mode === 'NODATA') {
-        answer = new Uint8Array(query.raw);
-        answer[2] |= 0x80; // QR=1
-        answer[3] = 0x80; // RA=1, RCODE=0 (NOERROR)
-        answer[6] = 0; answer[7] = 0;
+        // 返回 RCODE 0, 0 Answers
+        answer = buildResponse(query.raw, query.type, "", 3600, 0);
         displayAnswer = "NODATA";
       } else if (mode === 'CUSTOM_IP') {
         const customIp = query.type === 'AAAA' ? (settings.custom_block_ipv6 || "::") : (settings.custom_block_ipv4 || "0.0.0.0");
