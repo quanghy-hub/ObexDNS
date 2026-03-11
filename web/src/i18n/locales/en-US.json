@@ -280,8 +280,8 @@
     "blockModeTitle": "Block Response Mode",
     "blockModeDesc": "What to return when a domain is blocked",
     "default": "Default",
-    "NXDOMAIN": "NXDOMAIN",
-    "NODATA": "NODATA",
+    "NXDOMAIN": "Non Existent Domain",
+    "NODATA": "No Records Returned",
     "customIP": "Custom IP"
   },
   "account": {
