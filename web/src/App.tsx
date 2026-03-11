@@ -49,9 +49,34 @@ import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import { GitHubCorner } from "./components/GithubCorner";
 import LogoIcon from "./assets/Obex_DNS_Logo-256.png";
 
-const AuthView = lazy(() => import("./components/AuthView").then(m => ({ default: m.AuthView })));
-const AccountView = lazy(() => import("./views/AccountView").then(m => ({ default: m.AccountView })));
-const ProfileRoutes = lazy(() => import("./ProfileRoutes"));
+// --- 预加载工具函数 ---
+function lazyWithPreload<T extends React.ComponentType<any>>(factory: () => Promise<{ default: T }>) {
+  const Component = lazy(factory);
+  (Component as any).preload = factory;
+  return Component as unknown as T & { preload: () => Promise<{ default: T }> };
+}
+
+const AuthView = lazyWithPreload(() => import("./components/AuthView").then(m => ({ default: m.AuthView })));
+const SetupView = lazyWithPreload(() => import("./views/SetupView").then(m => ({ default: m.SetupView })));
+const FilteringView = lazyWithPreload(() => import("./views/FilteringView").then(m => ({ default: m.FilteringView })));
+const RulesView = lazyWithPreload(() => import("./views/RulesView").then(m => ({ default: m.RulesView })));
+const SettingsView = lazyWithPreload(() => import("./views/SettingsView").then(m => ({ default: m.SettingsView })));
+const AnalyticsView = lazyWithPreload(() => import("./views/AnalyticsView").then(m => ({ default: m.AnalyticsView })));
+const LogsView = lazyWithPreload(() => import("./views/LogsView").then(m => ({ default: m.LogsView })));
+const AccountView = lazyWithPreload(() => import("./views/AccountView").then(m => ({ default: m.AccountView })));
+
+// 预加载策略：在合适的时间点拉取资源
+const preloadMainViews = () => {
+  SetupView.preload();
+  LogsView.preload();
+};
+
+const preloadHeavyViews = () => {
+  AnalyticsView.preload(); // 包含 recharts
+  SettingsView.preload();
+  RulesView.preload();
+  FilteringView.preload();
+};
 
 interface Profile {
   id: string;
@@ -89,6 +114,14 @@ const DashboardHome = ({
 }: any) => {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    // 进入控制台主页，开始静默预加载核心资源
+    preloadMainViews();
+    // 延迟 2 秒预加载重型资源（如图表库）
+    const timer = setTimeout(preloadHeavyViews, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
@@ -734,6 +767,48 @@ const NotFoundView = () => {
         }
       />
     </div>
+  );
+};
+
+const ProfileRoutes = ({
+  selectedProfile,
+  prefilledRule,
+  setPrefilledRule,
+  handleQuickAction,
+  toasterRef,
+}: any) => {
+  const { profileId } = useParams();
+  const id = profileId || selectedProfile?.id || "";
+  return (
+    <Suspense fallback={<div className="p-20 flex justify-center"><Spinner size={40} /></div>}>
+      <Routes>
+        <Route
+          path="setup"
+          element={<SetupView profileId={id} toasterRef={toasterRef} />}
+        />
+        <Route path="filter" element={<FilteringView profileId={id} />} />
+        <Route
+          path="rules"
+          element={
+            <RulesView
+              profileId={id}
+              prefill={prefilledRule}
+              onPrefillUsed={() => setPrefilledRule(null)}
+            />
+          }
+        />
+        <Route
+          path="settings"
+          element={<SettingsView profileId={id} toasterRef={toasterRef} />}
+        />
+        <Route path="stats" element={<AnalyticsView profileId={id} />} />
+        <Route
+          path="logs"
+          element={<LogsView profileId={id} onQuickAction={handleQuickAction} />}
+        />
+        <Route path="*" element={<NotFoundView />} />
+      </Routes>
+    </Suspense>
   );
 };
 
