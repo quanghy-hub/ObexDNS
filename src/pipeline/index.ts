@@ -21,8 +21,18 @@ export const pipeline = {
 
     const cached = dnsCache.get(`${context.profileId}:${query.name}:${query.type}`);
     if (cached && Date.now() < cached.expiresAt) {
-      const patched = new Uint8Array(cached.answer); patched[0] = query.raw[0]; patched[1] = query.raw[1];
-      return { answer: patched, ttl: Math.ceil((cached.expiresAt - Date.now()) / 1000), action: cached.action, reason: cached.reason, latency: Date.now() - context.startTime, timings: { dns_cache_mem: Date.now() - context.startTime } };
+      const patched = new Uint8Array(cached.answer); 
+      if (patched.length >= 2 && query.raw.length >= 2) {
+        patched[0] = query.raw[0]; patched[1] = query.raw[1];
+      }
+      return { 
+        answer: patched, 
+        ttl: Math.ceil((cached.expiresAt - Date.now()) / 1000), 
+        action: cached.action, 
+        reason: cached.reason, 
+        latency: Date.now() - context.startTime, 
+        timings: { dns_cache_mem: Date.now() - context.startTime } 
+      };
     }
 
     // 2. 加载配置

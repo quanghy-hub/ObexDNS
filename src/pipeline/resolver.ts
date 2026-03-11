@@ -69,9 +69,11 @@ export const pipelineResolver = {
           latency
         });
 
-        dnsCache.set(`${context.profileId}:${query.name}:${query.type}`, {
-          answer, ttl: minTTL, action, reason, expiresAt: Date.now() + (minTTL * 1000)
-        });
+        if (answer.length > 0) {
+          dnsCache.set(`${context.profileId}:${query.name}:${query.type}`, {
+            answer, ttl: minTTL, action, reason, expiresAt: Date.now() + (minTTL * 1000)
+          });
+        }
       })());
 
       return {
