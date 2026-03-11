@@ -207,59 +207,55 @@ export function parseDNSAnswer(raw: Uint8Array): { type: string; data: string; t
 }
 
 export function buildResponse(queryRaw: Uint8Array, type: string, value: string, ttl: number = 60, rcode: number = 0): Uint8Array {
-  // 防御性检查：确保输入包至少有 Header
-  if (!queryRaw || queryRaw.length < 12) {
-    throw new Error("Invalid DNS Query: Package too short");
-  }
-
-  const header = new Uint8Array(12);
-  header.set(queryRaw.slice(0, 12));
-  
-  // Flags: QR=1 (Response), AA=1 (Authoritative), 保留原始 RD (Recursion Desired)
-  header[2] = (header[2] & 0x01) | 0x84; 
-  // RA=1 (Recursion Available), Z=0, RCODE
-  header[3] = 0x80 | (rcode & 0x0F);
-  
-  let questionSection: Uint8Array;
   try {
-    // 准确计算 Question Section 结束位置，以跳过可能的附加记录 (如 OPT)
-    let offset = 12;
+    if (!queryRaw || queryRaw.length < 12) {
+      // 极端情况：包太短，返回一个最简错误包
+      const err = new Uint8Array(12);
+      err[2] = 0x81; err[3] = 0x82; // Server Failure
+      return err;
+    }
+
+    // 1. 准备 Header (12 字节)
+    const header = new Uint8Array(12);
+    header.set(queryRaw.slice(0, 12));
+    header[2] = (header[2] & 0x01) | 0x84; // QR=1, AA=1, 继承 RD
+    header[3] = 0x80 | (rcode & 0x0F);    // RA=1, RCODE
+    
+    // 2. 提取 Question Section (紧跟 Header 之后)
+    let qEnd = 12;
     const qCount = (queryRaw[4] << 8) | queryRaw[5];
     for (let i = 0; i < qCount; i++) {
-      if (offset >= queryRaw.length) break;
-      const { read } = decodeName(queryRaw, offset);
-      offset += read + 4; // Name + Type(2) + Class(2)
+      const { read } = decodeName(queryRaw, qEnd);
+      if (read === 0 && qEnd < queryRaw.length) {
+        qEnd++; // 安全步进
+      } else {
+        qEnd += read + 4;
+      }
+      if (qEnd > queryRaw.length) { qEnd = queryRaw.length; break; }
     }
-    const end = Math.min(offset, queryRaw.length);
-    questionSection = queryRaw.slice(12, end);
-  } catch (e) {
-    console.error("Failed to extract Question Section, falling back to empty:", e);
-    questionSection = new Uint8Array(0);
-    header[4] = 0; header[5] = 0; // 如果提取失败，强制 QDCOUNT = 0
-  }
-  
-  header[6] = 0; header[7] = value ? 1 : 0; // ANCOUNT
-  header[8] = 0; header[9] = 0;             // NSCOUNT
-  header[10] = 0; header[11] = 0;           // ARCOUNT (丢弃 OPT 记录)
+    const questionSection = queryRaw.slice(12, qEnd);
+    
+    header[4] = (qCount >> 8) & 0xff; header[5] = qCount & 0xff; // 保持原始问题数
+    header[6] = 0; header[7] = value ? 1 : 0; // ANCOUNT
+    header[8] = 0; header[9] = 0;             // NSCOUNT
+    header[10] = 0; header[11] = 0;           // ARCOUNT (丢弃额外的附加记录)
 
-  // 如果没有具体值（如 NXDOMAIN 或 NODATA），只返回 Header + Question
-  if (!value) {
-    const res = new Uint8Array(12 + questionSection.length);
-    res.set(header);
-    res.set(questionSection, 12);
-    return res;
-  }
+    if (!value) {
+      const res = new Uint8Array(12 + questionSection.length);
+      res.set(header);
+      res.set(questionSection, 12);
+      return res;
+    }
 
-  // 构造 Answer Section
-  let data: number[] = [];
-  try {
+    // 3. 准备 Answer 内容
+    let data: number[] = [];
     if (type === 'A') {
-      data = value.split('.').map(v => parseInt(v));
+      data = value.split('.').map(v => parseInt(v) || 0);
     } else if (type === 'AAAA') {
       const parts = value.split(':');
       for (const part of parts) {
         const v = parseInt(part || "0", 16);
-        data.push(v >> 8);
+        data.push((v >> 8) & 0xff);
         data.push(v & 0xff);
       }
     } else if (type === 'CNAME') {
@@ -270,35 +266,31 @@ export function buildResponse(queryRaw: Uint8Array, type: string, value: string,
       }
       data.push(0);
     } else if (type === 'TXT') {
-      data.push(value.length);
-      for (let i = 0; i < value.length; i++) data.push(value.charCodeAt(i));
+      const safeVal = value.substring(0, 255);
+      data.push(safeVal.length);
+      for (let i = 0; i < safeVal.length; i++) data.push(safeVal.charCodeAt(i));
     }
-  } catch (e) {
-    console.error("Failed to encode Answer data:", e);
-    // 编码失败回退到 NXDOMAIN
-    header[3] = 0x83; // RCODE 3
-    header[7] = 0;    // ANCOUNT 0
-    const res = new Uint8Array(12 + questionSection.length);
+
+    const answerRR = new Uint8Array(10 + data.length);
+    answerRR[0] = 0xc0; answerRR[1] = 0x0c; // 压缩指针指向第一个问题
+    const typeMap: Record<string, number> = { "A": 1, "AAAA": 28, "CNAME": 5, "TXT": 16 };
+    const tCode = typeMap[type] || 1;
+    answerRR[2] = (tCode >> 8); answerRR[3] = tCode & 0xff;
+    answerRR[4] = 0; answerRR[5] = 1; // Class IN
+    answerRR[6] = (ttl >> 24) & 0xff; answerRR[7] = (ttl >> 16) & 0xff;
+    answerRR[8] = (ttl >> 8) & 0xff; answerRR[9] = ttl & 0xff;
+    answerRR.set(data, 10);
+
+    const res = new Uint8Array(12 + questionSection.length + answerRR.length);
     res.set(header);
     res.set(questionSection, 12);
+    res.set(answerRR, 12 + questionSection.length);
     return res;
+  } catch (e) {
+    console.error("Critical error in buildResponse:", e);
+    const fallback = new Uint8Array(12);
+    fallback.set(queryRaw.slice(0, 12));
+    fallback[2] |= 0x80; fallback[3] = (fallback[3] & 0xF0) | 0x02; // ServFail
+    return fallback;
   }
-
-  const answerSection = new Uint8Array(10 + data.length);
-  let aPos = 0;
-  answerSection[aPos++] = 0xc0; answerSection[aPos++] = 0x0c; // 压缩指针指向域名
-  const typeMap: Record<string, number> = { "A": 1, "AAAA": 28, "CNAME": 5, "TXT": 16 };
-  const typeCode = typeMap[type] || 1;
-  answerSection[aPos++] = typeCode >> 8; answerSection[aPos++] = typeCode & 0xff;
-  answerSection[aPos++] = 0x00; answerSection[aPos++] = 0x01; // Class IN
-  answerSection[aPos++] = (ttl >> 24) & 0xff; answerSection[aPos++] = (ttl >> 16) & 0xff;
-  answerSection[aPos++] = (ttl >> 8) & 0xff; answerSection[aPos++] = ttl & 0xff;
-  answerSection[aPos++] = data.length >> 8; answerSection[aPos++] = data.length & 0xff;
-  answerSection.set(data, aPos);
-
-  const res = new Uint8Array(12 + questionSection.length + answerSection.length);
-  res.set(header);
-  res.set(questionSection, 12);
-  res.set(answerSection, 12 + questionSection.length);
-  return res;
 }

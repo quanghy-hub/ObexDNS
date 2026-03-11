@@ -20,18 +20,23 @@ export const pipeline = {
     }
 
     const cached = dnsCache.get(`${context.profileId}:${query.name}:${query.type}`);
-    if (cached && Date.now() < cached.expiresAt) {
-      const patched = new Uint8Array(cached.answer); 
-      if (patched.length >= 2 && query.raw.length >= 2) {
-        patched[0] = query.raw[0]; patched[1] = query.raw[1];
+    if (cached && Date.now() < cached.expiresAt && cached.answer instanceof Uint8Array) {
+      // 这里的 cached.answer 已经是完整的 DNS 报文
+      // 关键：DNS ID 必须匹配原始查询。ID 位于报文的前 2 字节。
+      const response = new Uint8Array(cached.answer);
+      if (response.length >= 2 && query.raw.length >= 2) {
+        response[0] = query.raw[0];
+        response[1] = query.raw[1];
       }
-      return { 
-        answer: patched, 
-        ttl: Math.ceil((cached.expiresAt - Date.now()) / 1000), 
-        action: cached.action, 
-        reason: cached.reason, 
-        latency: Date.now() - context.startTime, 
-        timings: { dns_cache_mem: Date.now() - context.startTime } 
+      
+      const latency = Date.now() - context.startTime;
+      return {
+        answer: response,
+        ttl: Math.ceil((cached.expiresAt - Date.now()) / 1000),
+        action: cached.action,
+        reason: cached.reason,
+        latency,
+        timings: { dns_cache_mem: latency }
       };
     }
 
