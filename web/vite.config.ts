@@ -45,6 +45,9 @@ export default defineConfig({
             if (id.includes('recharts')) {
               return 'vendor-recharts';
             }
+            if (id.includes('i18next')) {
+              return 'vendor-i18next';
+            }
             return 'vendor-utils';
           }
         },
