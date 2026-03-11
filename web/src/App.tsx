@@ -49,14 +49,9 @@ import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import { GitHubCorner } from "./components/GithubCorner";
 import LogoIcon from "./assets/Obex_DNS_Logo-256.png";
 
-const FilteringView = lazy(() => import("./views/FilteringView").then(m => ({ default: m.FilteringView })));
-const AccountView = lazy(() => import("./views/AccountView").then(m => ({ default: m.AccountView })));
-const SettingsView = lazy(() => import("./views/SettingsView").then(m => ({ default: m.SettingsView })));
-const RulesView = lazy(() => import("./views/RulesView").then(m => ({ default: m.RulesView })));
-const LogsView = lazy(() => import("./views/LogsView").then(m => ({ default: m.LogsView })));
-const AnalyticsView = lazy(() => import("./views/AnalyticsView").then(m => ({ default: m.AnalyticsView })));
-const SetupView = lazy(() => import("./views/SetupView").then(m => ({ default: m.SetupView })));
 const AuthView = lazy(() => import("./components/AuthView").then(m => ({ default: m.AuthView })));
+const AccountView = lazy(() => import("./views/AccountView").then(m => ({ default: m.AccountView })));
+const ProfileRoutes = lazy(() => import("./ProfileRoutes"));
 
 interface Profile {
   id: string;
@@ -739,46 +734,6 @@ const NotFoundView = () => {
         }
       />
     </div>
-  );
-};
-
-const ProfileRoutes = ({
-  selectedProfile,
-  prefilledRule,
-  setPrefilledRule,
-  handleQuickAction,
-  toasterRef,
-}: any) => {
-  const { profileId } = useParams();
-  const id = profileId || selectedProfile?.id || "";
-  return (
-    <Routes>
-      <Route
-        path="setup"
-        element={<SetupView profileId={id} toasterRef={toasterRef} />}
-      />
-      <Route path="filter" element={<FilteringView profileId={id} />} />
-      <Route
-        path="rules"
-        element={
-          <RulesView
-            profileId={id}
-            prefill={prefilledRule}
-            onPrefillUsed={() => setPrefilledRule(null)}
-          />
-        }
-      />
-      <Route
-        path="settings"
-        element={<SettingsView profileId={id} toasterRef={toasterRef} />}
-      />
-      <Route path="stats" element={<AnalyticsView profileId={id} />} />
-      <Route
-        path="logs"
-        element={<LogsView profileId={id} onQuickAction={handleQuickAction} />}
-      />
-      <Route path="*" element={<NotFoundView />} />
-    </Routes>
   );
 };
 
