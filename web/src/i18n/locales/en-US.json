@@ -22,7 +22,8 @@
     "NorthAmerica": "North America",
     "nae": "North America East",
     "naw": "North America West",
-    "eu": "Europe"
+    "eu": "Europe",
+    "invalidFormat": "Invalid File Format"
   },
   "nav": {
     "setup": "Setup",
@@ -282,7 +283,10 @@
     "default": "Default",
     "NXDOMAIN": "Non Existent Domain",
     "NODATA": "No Records Returned",
-    "customIP": "Custom IP"
+    "customIP": "Custom IP",
+    "export": "Export Profile",
+    "exportSuccess": "Profile exported successfully",
+    "exportError": "Failed to export profile, please try again later"
   },
   "account": {
     "title": "Account Settings",

@@ -22,7 +22,8 @@
     "NorthAmerica": "北美",
     "nae": "北美東部",
     "naw": "北美西部",
-    "eu": "歐洲"
+    "eu": "歐洲",
+    "invalidFormat": "無效文件格式"
   },
   "nav": {
     "setup": "安裝",
@@ -282,7 +283,10 @@
     "default": "預設",
     "NXDOMAIN": "查無此名",
     "NODATA": "空回答",
-    "customIP": "自訂 IP"
+    "customIP": "自訂 IP",
+    "export": "匯出設定檔",
+    "exportSuccess": "設定成功匯出",
+    "exportError": "設定匯出失敗，請稍後再試"
   },
   "account": {
     "title": "帳號設定",

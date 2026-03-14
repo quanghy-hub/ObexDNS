@@ -22,7 +22,8 @@
     "NorthAmerica": "北美",
     "nae": "北美东部",
     "naw": "北美西部",
-    "eu": "欧洲"
+    "eu": "欧洲",
+    "invalidFormat": "无效文件格式"
   },
   "nav": {
     "setup": "安装",
@@ -282,7 +283,10 @@
     "default": "默认",
     "NXDOMAIN": "域名不存在",
     "NODATA": "空回答",
-    "customIP": "自定义 IP"
+    "customIP": "自定义 IP",
+    "export": "导出配置",
+    "exportSuccess": "配置成功导出",
+    "exportError": "配置导出失败，请稍后再试"
   },
   "account": {
     "title": "账号设置",

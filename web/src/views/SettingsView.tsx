@@ -238,7 +238,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       URL.revokeObjectURL(url);
 
       toasterRef?.current?.show({
-        message: t("settings.exportSuccess", "配置已成功导出"),
+        message: t("settings.exportSuccess", "配置成功导出"),
         intent: Intent.SUCCESS,
         icon: "download",
       });
