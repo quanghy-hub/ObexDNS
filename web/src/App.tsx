@@ -111,20 +111,86 @@ const DashboardHome = ({
   onDelete,
   handleLogout,
   navigate,
+  onRefresh, // 增加刷新回调
 }: any) => {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
-    // 进入控制台主页，开始静默预加载核心资源
     preloadMainViews();
-    // 延迟 2 秒预加载重型资源（如图表库）
     const timer = setTimeout(preloadHeavyViews, 2000);
     return () => clearTimeout(timer);
   }, []);
 
+  const handleImportClick = () => fileInputRef.current?.click();
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (!data.settings || !data.name) {
+        alert(t("common.invalidFormat", "无效的配置文件格式"));
+        return;
+      }
+
+      const createRes = await fetch("/api/profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: `${data.name} (Imported)` }),
+      });
+      if (!createRes.ok) throw new Error("Failed to create profile");
+      const { id: newId } = await createRes.json();
+
+      await fetch(`/api/profiles/${newId}/settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data.settings),
+      });
+
+      if (data.rules && Array.isArray(data.rules)) {
+        await Promise.all(data.rules.map((rule: any) => 
+          fetch(`/api/profiles/${newId}/rules`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: rule.type,
+              pattern: rule.pattern,
+              v_a: rule.v_a,
+              v_aaaa: rule.v_aaaa,
+              v_cname: rule.v_cname,
+              v_txt: rule.v_txt
+            }),
+          })
+        ));
+      }
+
+      alert(t("common.importSuccess", "配置导入成功"));
+      onRefresh?.(); 
+    } catch (e) {
+      console.error(e);
+      alert(t("common.importError", "导入失败"));
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept=".json"
+        onChange={handleFileChange}
+      />
       {/* 顶部导航栏 - 玻璃拟态 */}
       <div className="sticky top-0 z-30 h-14 border-b border-gray-200/50 dark:border-gray-800/50 bg-white/70 dark:bg-gray-900/70 backdrop-blur-lg flex items-center justify-between px-4 md:px-6 shrink-0">
         <div className="flex items-center gap-2">
@@ -179,13 +245,23 @@ const DashboardHome = ({
             >
               {t("common.selectProfile")}
             </H3>
-            <Button
-              variant="minimal"
-              intent={Intent.PRIMARY}
-              icon={<Plus size={18} />}
-              onClick={() => setShowCreate(true)}
-              text={t("common.add")}
-            />
+            <div className="flex gap-1">
+              <Button
+                variant="minimal"
+                icon={<Download size={16} />}
+                onClick={handleImportClick}
+                text={isMobile ? "" : t("common.import", "导入")}
+                loading={importing}
+              />
+              <Button
+                variant="minimal"
+                intent={Intent.PRIMARY}
+                icon={<Plus size={18} />}
+                onClick={() => setShowCreate(true)}
+                text={t("common.add")}
+                disabled={showCreate}
+              />
+            </div>
           </div>
 
           {showCreate && (
@@ -694,6 +770,7 @@ function App() {
               onDelete={handleDeleteProfile}
               handleLogout={handleLogout}
               navigate={navigate}
+              onRefresh={checkAuthAndFetchData}
             />
           }
         />

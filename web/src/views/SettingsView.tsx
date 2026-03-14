@@ -27,6 +27,7 @@ import {
   Zap,
   MapPin,
   Activity,
+  Download,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -211,6 +212,46 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     }
   };
 
+  const exportProfile = async () => {
+    if (!profile || !settings) return;
+    try {
+      // 获取规则列表以实现完整导出
+      const resRules = await fetch(`/api/profiles/${profileId}/rules`);
+      const rules = resRules.ok ? await resRules.json() : [];
+
+      const exportData = {
+        version: 1,
+        name: profile.name,
+        settings: settings,
+        rules: rules,
+        exported_at: Math.floor(Date.now() / 1000)
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `obex-dns-${profile.name || profileId}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toasterRef?.current?.show({
+        message: t("settings.exportSuccess", "配置已成功导出"),
+        intent: Intent.SUCCESS,
+        icon: "download",
+      });
+    } catch (e) {
+      console.error(e);
+      toasterRef?.current?.show({
+        message: t("settings.exportError", "导出失败"),
+        intent: Intent.DANGER,
+        icon: "error",
+      });
+    }
+  };
+
   if (loading || !settings)
     return (
       <div className="p-20 flex justify-center">
@@ -247,14 +288,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <h2 className="bp6-heading">{t("settings.title")}</h2>
           <p className="bp6-text-muted">{t("settings.subtitle")}</p>
         </div>
-        <Button
-          size="large"
-          intent={Intent.PRIMARY}
-          icon="floppy-disk"
-          text={t("settings.saveChanges")}
-          onClick={saveSettings}
-          loading={saving}
-        />
+        <div className="flex gap-2">
+          <Button
+            size="large"
+            icon={<Download size={18} />}
+            text={t("settings.export", "导出配置")}
+            onClick={exportProfile}
+          />
+          <Button
+            size="large"
+            intent={Intent.PRIMARY}
+            icon="floppy-disk"
+            text={t("settings.saveChanges")}
+            onClick={saveSettings}
+            loading={saving}
+          />
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 上游服务器设置 */}
