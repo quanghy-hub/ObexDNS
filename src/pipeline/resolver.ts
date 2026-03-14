@@ -13,7 +13,7 @@ export const pipelineResolver = {
     const targetUrl = new URL(upstreamUrl);
     targetUrl.searchParams.set('dns', btoa(String.fromCharCode(...query.raw)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''));
 
-    let ecs = "";
+    let ecs: string | undefined = "";
 
     if (settings.ecs?.enabled) {
       const clientIp = request.headers.get("CF-Connecting-IP") || "127.0.0.1";
