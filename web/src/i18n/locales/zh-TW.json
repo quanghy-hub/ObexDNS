@@ -285,8 +285,9 @@
     "NODATA": "空回答",
     "customIP": "自訂 IP",
     "export": "匯出設定檔",
-    "exportSuccess": "設定成功匯出",
-    "exportError": "設定匯出失敗，請稍後再試"
+    "exportSuccess": "設定檔成功匯出",
+    "exportError": "設定檔匯出失敗，請稍後再試",
+    "nameUpdateSuccess": "設定檔名稱已更新"
   },
   "account": {
     "title": "帳號設定",

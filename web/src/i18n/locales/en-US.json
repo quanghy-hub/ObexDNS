@@ -286,7 +286,8 @@
     "customIP": "Custom IP",
     "export": "Export Profile",
     "exportSuccess": "Profile exported successfully",
-    "exportError": "Failed to export profile, please try again later"
+    "exportError": "Failed to export profile, please try again later",
+    "nameUpdateSuccess": "Profile name updated successfully"
   },
   "account": {
     "title": "Account Settings",

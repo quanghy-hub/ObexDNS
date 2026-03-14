@@ -60,6 +60,16 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
       return new Response(null, { status: 204 });
     }
 
+    // PATCH /api/profiles/:id (用于修改名称等基础信息)
+    if (pathParts.length === 3 && request.method === 'PATCH') {
+      const { name } = await request.json() as { name: string };
+      if (!name) return new Response("名称不能为空", { status: 400 });
+      await env.DB.prepare("UPDATE profiles SET name = ?, updated_at = ? WHERE id = ?")
+        .bind(name, Math.floor(Date.now() / 1000), profileId).run();
+      await pipeline.clearCache(profileId);
+      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
     // GET /api/profiles/:id
     if (pathParts.length === 3 && request.method === 'GET') {
       return new Response(JSON.stringify(profile), {

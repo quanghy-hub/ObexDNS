@@ -28,6 +28,9 @@ import {
   MapPin,
   Activity,
   Download,
+  Edit2,
+  Check,
+  X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -92,6 +95,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [saving, setSaving] = useState(false);
   const { t } = useTranslation();
 
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState("");
+
   const PRESET_UPSTREAMS = useMemo(() => [
     {
       label: t("settings.presetCloudflareSecurity"),
@@ -152,6 +158,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         const res = await fetch(`/api/profiles/${profileId}`);
         const data = await res.json();
         setProfile(data);
+        setEditName(data.name);
         setSettings(JSON.parse(data.settings));
         return profile;
       } catch (e) {
@@ -162,6 +169,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     };
     fetchProfile();
   }, [profileId]);
+
+  const updateProfileName = async () => {
+    if (!editName || editName === profile?.name) {
+      setIsEditingName(false);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/profiles/${profileId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName }),
+      });
+      if (res.ok) {
+        setProfile(prev => prev ? { ...prev, name: editName } : null);
+        setIsEditingName(false);
+        toasterRef?.current?.show({
+          message: t("settings.nameUpdateSuccess", "名称已更新"),
+          intent: Intent.SUCCESS,
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const saveSettings = async () => {
     if (!settings) return;
@@ -285,7 +316,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     <div className="p-8 max-w-5xl mx-auto space-y-8 pb-20">
       <div className="mb-6 flex justify-between items-center">
         <div className="flex flex-col justify-start">
-          <h2 className="bp6-heading">{t("settings.title")}</h2>
+          {isEditingName ? (
+            <div className="flex items-center gap-2 mb-1">
+              <InputGroup
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") updateProfileName();
+                  if (e.key === "Escape") { setIsEditingName(false); setEditName(profile?.name || ""); }
+                }}
+              />
+              <Button icon={<Check size={16} />} intent={Intent.SUCCESS} minimal onClick={updateProfileName} />
+              <Button icon={<X size={16} />} minimal onClick={() => { setIsEditingName(false); setEditName(profile?.name || ""); }} />
+            </div>
+          ) : (
+            <div className="group flex items-center gap-2 mb-1 cursor-pointer" onClick={() => setIsEditingName(true)}>
+              <h2 className="bp6-heading mb-0">{profile?.name}</h2>
+              <Button
+                icon={<Edit2 size={14} />}
+                minimal
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+              />
+            </div>
+          )}
           <p className="bp6-text-muted">{t("settings.subtitle")}</p>
         </div>
         <div className="flex gap-2">
