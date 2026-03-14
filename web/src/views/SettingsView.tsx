@@ -35,7 +35,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 interface ProfileSettings {
-  upstream: string[]; // DoH URLs
+  upstream: string[]; // DoH URLs or Classic DNS
   ecs: {
     enabled: boolean;
     use_client_ip: boolean;
@@ -98,51 +98,73 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState("");
 
-  const PRESET_UPSTREAMS = useMemo(() => [
-    {
-      label: t("settings.presetCloudflareSecurity"),
-      url: "https://security.cloudflare-dns.com/dns-query",
-    },
-    {
-      label: t("settings.presetCloudflareFamilies"),
-      url: "https://family.cloudflare-dns.com/dns-query",
-    },
-    {
-      label: t("settings.presetQuad9"),
-      url: "https://dns.quad9.net/dns-query",
-    },
-    {
-      label: t("settings.presetQuad9Ecs"),
-      url: "https://dns11.quad9.net/dns-query",
-    },
-    {
-      label: t("settings.presetControlDFree"),
-      url: "https://freedns.controld.com/no-ads-malware-typo",
-    },
-    {
-      label: t("settings.presetControlDUncensored"),
-      url: "https://freedns.controld.com/uncensored",
-    },
-    {
-      label: t("settings.presetAdGuard"),
-      url: "https://dns.adguard-dns.com/dns-query",
-    },
-    {
-      label: t("settings.presetAdGuardFamily"),
-      url: "https://family.adguard-dns.com/dns-query",
-    },
-  ], [t]);
+  const PRESET_UPSTREAMS = useMemo(
+    () => [
+      {
+        label: t("settings.presetCloudflareSecurity"),
+        url: "https://security.cloudflare-dns.com/dns-query",
+      },
+      {
+        label: t("settings.presetCloudflareFamilies"),
+        url: "https://family.cloudflare-dns.com/dns-query",
+      },
+      {
+        label: t("settings.presetQuad9"),
+        url: "https://dns.quad9.net/dns-query",
+      },
+      {
+        label: t("settings.presetQuad9Ecs"),
+        url: "https://dns11.quad9.net/dns-query",
+      },
+      {
+        label: t("settings.presetControlDFree"),
+        url: "https://freedns.controld.com/no-ads-malware-typo",
+      },
+      {
+        label: t("settings.presetControlDUncensored"),
+        url: "https://freedns.controld.com/uncensored",
+      },
+      {
+        label: t("settings.presetAdGuard"),
+        url: "https://dns.adguard-dns.com/dns-query",
+      },
+      {
+        label: t("settings.presetAdGuardFamily"),
+        url: "https://family.adguard-dns.com/dns-query",
+      },
+      {
+        label: "Cloudflare (1.1.1.1)",
+        url: "1.1.1.1",
+      },
+      {
+        label: "Cloudflare Security (1.1.1.2)",
+        url: "1.1.1.2",
+      },
+      {
+        label: "Quad9 (9.9.9.9)",
+        url: "9.9.9.9:9953",
+      },
+      {
+        label: "Google (8.8.8.8)",
+        url: "8.8.8.8",
+      },
+    ],
+    [t],
+  );
 
-  const LOG_RETENTION_OPTIONS = useMemo(() => [
-    { label: t("settings.retention10m"), value: 0.007 },
-    { label: t("settings.retention1h"), value: 0.0416 },
-    { label: t("settings.retention24h"), value: 1 },
-    { label: t("settings.retention7d"), value: 7 },
-    { label: t("settings.retention30d"), value: 30 },
-    { label: t("settings.retention180d"), value: 180 },
-    { label: t("settings.retention360d"), value: 360 },
-    { label: t("settings.retention720d"), value: 720 },
-  ], [t]);
+  const LOG_RETENTION_OPTIONS = useMemo(
+    () => [
+      { label: t("settings.retention10m"), value: 0.007 },
+      { label: t("settings.retention1h"), value: 0.0416 },
+      { label: t("settings.retention24h"), value: 1 },
+      { label: t("settings.retention7d"), value: 7 },
+      { label: t("settings.retention30d"), value: 30 },
+      { label: t("settings.retention180d"), value: 180 },
+      { label: t("settings.retention360d"), value: 360 },
+      { label: t("settings.retention720d"), value: 720 },
+    ],
+    [t],
+  );
 
   // DNS 测试相关状态
   const [testInput, setTestInput] = useState({
@@ -182,7 +204,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         body: JSON.stringify({ name: editName }),
       });
       if (res.ok) {
-        setProfile(prev => prev ? { ...prev, name: editName } : null);
+        setProfile((prev) => (prev ? { ...prev, name: editName } : null));
         setIsEditingName(false);
         toasterRef?.current?.show({
           message: t("settings.nameUpdateSuccess", "名称已更新"),
@@ -255,10 +277,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         name: profile.name,
         settings: settings,
         rules: rules,
-        exported_at: Math.floor(Date.now() / 1000)
+        exported_at: Math.floor(Date.now() / 1000),
       };
 
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: "application/json",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -324,14 +348,32 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter") updateProfileName();
-                  if (e.key === "Escape") { setIsEditingName(false); setEditName(profile?.name || ""); }
+                  if (e.key === "Escape") {
+                    setIsEditingName(false);
+                    setEditName(profile?.name || "");
+                  }
                 }}
               />
-              <Button icon={<Check size={16} />} intent={Intent.SUCCESS} minimal onClick={updateProfileName} />
-              <Button icon={<X size={16} />} minimal onClick={() => { setIsEditingName(false); setEditName(profile?.name || ""); }} />
+              <Button
+                icon={<Check size={16} />}
+                intent={Intent.SUCCESS}
+                minimal
+                onClick={updateProfileName}
+              />
+              <Button
+                icon={<X size={16} />}
+                minimal
+                onClick={() => {
+                  setIsEditingName(false);
+                  setEditName(profile?.name || "");
+                }}
+              />
             </div>
           ) : (
-            <div className="group flex items-center gap-2 mb-1 cursor-pointer" onClick={() => setIsEditingName(true)}>
+            <div
+              className="group flex items-center gap-2 mb-1 cursor-pointer"
+              onClick={() => setIsEditingName(true)}
+            >
               <h2 className="bp6-heading mb-0">{profile?.name}</h2>
               <Button
                 icon={<Edit2 size={14} />}
@@ -366,9 +408,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           className="dark:bg-gray-900 dark:border-gray-800"
         >
           <H5 className="flex items-center gap-2 mb-4 font-bold">
-            <Server size={18} className="text-blue-500" /> {t("settings.upstreamTitle")}
+            <Server size={18} className="text-blue-500" />{" "}
+            {t("settings.upstreamTitle")}
           </H5>
-          <FormGroup label={t("settings.dohUrl")} labelInfo={t("settings.httpsOnly")}>
+          <FormGroup label={t("settings.dohUrl") + "/" + t("settings.dnsIP")}>
             <InputGroup
               fill
               placeholder="https://dns.example.net/dns-query"
@@ -391,7 +434,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             />
           </FormGroup>
           <p className="text-xs opacity-60">
-            {t("settings.upstreamDesc")}
+            {t(
+              "settings.upstreamDesc",
+            )}
           </p>
         </Card>
 
@@ -401,7 +446,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           className="dark:bg-gray-900 dark:border-gray-800"
         >
           <H5 className="flex items-center gap-2 mb-4 font-bold">
-            <Shield size={18} className="text-green-500" /> {t("settings.defaultPolicyTitle")}
+            <Shield size={18} className="text-green-500" />{" "}
+            {t("settings.defaultPolicyTitle")}
           </H5>
           <div className="space-y-4">
             <FormGroup label={t("settings.onNoMatch")}>
@@ -415,18 +461,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   })
                 }
               >
-                <option value="ALLOW">
-                  {t("settings.allowAll")}
-                </option>
-                <option value="BLOCK">
-                  {t("settings.blockAll")}
-                </option>
+                <option value="ALLOW">{t("settings.allowAll")}</option>
+                <option value="BLOCK">{t("settings.blockAll")}</option>
               </HTMLSelect>
             </FormGroup>
 
             <Divider />
 
-            <FormGroup 
+            <FormGroup
               label={t("settings.blockModeTitle")}
               helperText={t("settings.blockModeDesc")}
             >
@@ -440,8 +482,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   })
                 }
               >
-                <option value="NULL_IP">0.0.0.0 / :: ({t("settings.default")})</option>
-                <option value="NXDOMAIN">NXDOMAIN ({t("settings.NXDOMAIN")})</option>
+                <option value="NULL_IP">
+                  0.0.0.0 / :: ({t("settings.default")})
+                </option>
+                <option value="NXDOMAIN">
+                  NXDOMAIN ({t("settings.NXDOMAIN")})
+                </option>
                 <option value="NODATA">NODATA ({t("settings.NODATA")})</option>
                 <option value="CUSTOM_IP">{t("settings.customIP")}</option>
               </HTMLSelect>
@@ -453,14 +499,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   placeholder="IPv4: 127.0.0.1"
                   value={settings.custom_block_ipv4 || ""}
                   onChange={(e) =>
-                    setSettings({ ...settings, custom_block_ipv4: e.target.value })
+                    setSettings({
+                      ...settings,
+                      custom_block_ipv4: e.target.value,
+                    })
                   }
                 />
                 <InputGroup
                   placeholder="IPv6: ::1"
                   value={settings.custom_block_ipv6 || ""}
                   onChange={(e) =>
-                    setSettings({ ...settings, custom_block_ipv6: e.target.value })
+                    setSettings({
+                      ...settings,
+                      custom_block_ipv6: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -474,7 +526,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           className="dark:bg-gray-900 dark:border-gray-800"
         >
           <H5 className="flex items-center gap-2 mb-4 font-bold">
-            <Clock size={18} className="text-purple-500" /> {t("settings.logRetentionTitle")}
+            <Clock size={18} className="text-purple-500" />{" "}
+            {t("settings.logRetentionTitle")}
           </H5>
           <div className="space-y-4">
             <FormGroup label={t("settings.retentionDuration")}>
@@ -495,9 +548,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 ))}
               </HTMLSelect>
             </FormGroup>
-            <p className="text-xs opacity-60">
-              {t("settings.retentionDesc")}
-            </p>
+            <p className="text-xs opacity-60">{t("settings.retentionDesc")}</p>
           </div>
         </Card>
 
@@ -507,7 +558,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           className="dark:bg-gray-900 dark:border-gray-800"
         >
           <H5 className="flex items-center gap-2 mb-4 font-bold">
-            <Globe size={18} className="text-orange-500" /> {t("settings.ecsTitle")}
+            <Globe size={18} className="text-orange-500" />{" "}
+            {t("settings.ecsTitle")}
           </H5>
           <div className="space-y-4">
             <Switch
@@ -733,7 +785,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 >
                   <div className="flex flex-col gap-1">
                     <div className="flex justify-between">
-                      <span className="font-bold">{t("settings.diagnostics")}</span>
+                      <span className="font-bold">
+                        {t("settings.diagnostics")}
+                      </span>
                       <span>HTTP {testResult.diagnostics.status}</span>
                     </div>
                     <div className="break-all">
