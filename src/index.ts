@@ -137,32 +137,42 @@ export default {
   },
 
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    const logModel = new LogModel(env.DB);
-    const now = Math.floor(Date.now() / 1000);
-    const inactivityThreshold = now - (180 * 24 * 3600); // 180 天
-
-    // 清理 180 天无活动的普通用户 (级联删除其所有 Profile、规则和日志)
     try {
-      await env.DB.prepare("DELETE FROM users WHERE role = 'user' AND last_active_at < ?").bind(inactivityThreshold).run();
-    } catch (e) {
-      console.error("[Cleanup] Failed to delete inactive users:", e);
-    }
+      const logModel = new LogModel(env.DB);
+      const now = Math.floor(Date.now() / 1000);
+      const inactivityThreshold = now - (180 * 24 * 3600); // 180 天
 
-    // 原有的日志清理逻辑
-    const { results: profiles } = await env.DB.prepare("SELECT id, settings FROM profiles").all<{ id: string, settings: string }>();
-
-    for (const profile of profiles) {
+      // 1. 清理 180 天无活动的普通用户 (级联删除)
       try {
-        const settings = JSON.parse(profile.settings);
-        const days = settings.log_retention_days || 30;
-        const threshold = Math.floor(Date.now() / 1000 - (days * 24 * 3600));
-
-        await logModel.cleanup(profile.id, threshold);
-        // 定期同步外部列表
-        ctx.waitUntil(syncProfileLists(profile.id, env, ctx));
+        await env.DB.prepare("DELETE FROM users WHERE role = 'user' AND last_active_at < ?").bind(inactivityThreshold).run();
       } catch (e) {
-        console.error(`[Cleanup] Failed for profile ${profile.id}:`, e);
+        console.error("[Cron] Inactive users cleanup failed:", e);
       }
+
+      // 2. 全局日志清理 (高效 SQL)
+      try {
+        await logModel.cleanupGlobal();
+      } catch (e) {
+        console.error("[Cron] Global log cleanup failed:", e);
+      }
+
+      // 3. 限制同步频率：每次仅同步最久没更新的 5 个 Profile
+      try {
+        const { results: syncTargets } = await env.DB.prepare(
+          "SELECT id FROM profiles ORDER BY list_updated_at ASC LIMIT 5"
+        ).all<{ id: string }>();
+
+        for (const target of syncTargets) {
+          // 使用 waitUntil 确保即便同步较慢也不会阻塞 Cron 主进程
+          ctx.waitUntil(syncProfileLists(target.id, env, ctx));
+        }
+      } catch (e) {
+        console.error("[Cron] List sync scheduling failed:", e);
+      }
+
+      console.log(`[Cron] Scheduled tasks completed at ${new Date().toISOString()}`);
+    } catch (e: any) {
+      console.error("[Cron] Critical Failure:", e.message);
     }
   }
 };

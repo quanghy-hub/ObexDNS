@@ -55,6 +55,24 @@ export class LogModel {
     return result.meta.changes || 0;
   }
 
+  /**
+   * 全局清理过期日志 (基于各 Profile 的 settings)
+   * 这是一个更重的操作，建议优化为单个 SQL
+   */
+  async cleanupGlobal(): Promise<void> {
+    // 这里的逻辑比较复杂，因为每个 Profile 的保留天数不同
+    // 我们先查询出所有不同的天数配置
+    const { results } = await this.db.prepare("SELECT DISTINCT json_extract(settings, '$.log_retention_days') as days FROM profiles").all<{days: number}>();
+    
+    for (const row of results) {
+      const days = row.days || 30;
+      const threshold = Math.floor(Date.now() / 1000 - (days * 24 * 3600));
+      // 清理所有设置为该天数的 Profile 的过期日志
+      await this.db.prepare("DELETE FROM logs WHERE timestamp < ? AND profile_id IN (SELECT id FROM profiles WHERE json_extract(settings, '$.log_retention_days') = ? OR (? = 30 AND json_extract(settings, '$.log_retention_days') IS NULL))")
+        .bind(threshold, days, days).run();
+    }
+  }
+
   async getAnalytics(profileId: string, since: number, until: number, interval: string) {
     const [summary, trend, topAllowed, topBlocked, clients, destinations] = await Promise.all([
       this.db.prepare("SELECT action, COUNT(*) as count FROM logs WHERE profile_id = ? AND timestamp >= ? AND timestamp <= ? GROUP BY action").bind(profileId, since, until).all(),
