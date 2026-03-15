@@ -3,10 +3,16 @@ import { RBAC } from "../lib/rbac";
 import { initializeLucia } from "../lib/auth";
 import { generateId } from "lucia";
 import { hashPassword, verifyPassword } from "../utils/crypto";
+import { UserModel } from "../models/user";
+import { ProfileModel } from "../models/profile";
+import { LogModel } from "../models/log";
 
 export async function handleAccountRequest(request: Request, env: Env, user: User, ctx: ExecutionContext): Promise<Response> {
   const url = new URL(request.url);
   const pathParts = url.pathname.split('/').filter(Boolean); // ['api', 'account', ...] 或 ['api', 'admin', 'users', ...]
+  const userModel = new UserModel(env.DB);
+  const profileModel = new ProfileModel(env.DB);
+  const logModel = new LogModel(env.DB);
 
   // 个人账号接口 (/api/account/...)
   if (pathParts[1] === 'account') {
@@ -27,7 +33,7 @@ export async function handleAccountRequest(request: Request, env: Env, user: Use
       }
 
       try {
-        await env.DB.prepare("UPDATE users SET username = ? WHERE id = ?").bind(newUsername, user.id).run();
+        await userModel.updateUsername(user.id, newUsername);
         return new Response(JSON.stringify({ success: true }));
       } catch (e: any) {
         if (e.message?.includes("UNIQUE constraint failed")) return new Response("The username is already taken", { status: 400 });
@@ -44,19 +50,19 @@ export async function handleAccountRequest(request: Request, env: Env, user: Use
       }
       
       // 验证旧密码
-      const dbUser = await env.DB.prepare("SELECT hashed_password FROM users WHERE id = ?").bind(user.id).first<any>();
+      const dbUser = await userModel.getById(user.id);
       if (!dbUser || !(await verifyPassword(oldPassword, dbUser.hashed_password))) {
         return new Response("Current password is incorrect", { status: 400 });
       }
 
       const hashedPassword = await hashPassword(newPassword);
-      await env.DB.prepare("UPDATE users SET hashed_password = ? WHERE id = ?").bind(hashedPassword, user.id).run();
+      await userModel.updatePassword(user.id, hashedPassword);
       return new Response(JSON.stringify({ success: true }));
     }
 
     // DELETE /api/account/logs (清空该用户下所有配置的日志)
     if (pathParts[2] === 'logs' && request.method === 'DELETE') {
-      await env.DB.prepare("DELETE FROM logs WHERE profile_id IN (SELECT id FROM profiles WHERE owner_id = ?)").bind(user.id).run();
+      await logModel.deleteByOwner(user.id);
       return new Response(JSON.stringify({ success: true }));
     }
 
@@ -67,10 +73,9 @@ export async function handleAccountRequest(request: Request, env: Env, user: Use
       }
 
       // 删除关联的所有配置 (logs, rules, lists 会通过级联删除自动清理)
-      await env.DB.prepare("DELETE FROM profiles WHERE owner_id = ?").bind(user.id).run();
-      
+      await profileModel.deleteByOwner(user.id);
       // 删除用户
-      await env.DB.prepare("DELETE FROM users WHERE id = ?").bind(user.id).run();
+      await userModel.delete(user.id);
 
       // 清除 Session
       const lucia = initializeLucia(env.DB);
@@ -91,8 +96,8 @@ export async function handleAccountRequest(request: Request, env: Env, user: Use
     if (pathParts[2] === 'users') {
       // GET /api/admin/users
       if (request.method === 'GET') {
-        const { results } = await env.DB.prepare("SELECT id, username, role, created_at FROM users ORDER BY created_at DESC").all();
-        return new Response(JSON.stringify(results), { headers: { 'Content-Type': 'application/json' } });
+        const users = await userModel.listAll();
+        return new Response(JSON.stringify(users), { headers: { 'Content-Type': 'application/json' } });
       }
 
       // POST /api/admin/users (创建新用户)
@@ -111,9 +116,7 @@ export async function handleAccountRequest(request: Request, env: Env, user: Use
         const userId = generateId(15);
         
         try {
-          await env.DB.prepare(
-            "INSERT INTO users (id, username, hashed_password, role, created_at) VALUES (?, ?, ?, ?, ?)"
-          ).bind(userId, username, hashedPassword, role || 'user', Math.floor(Date.now() / 1000)).run();
+          await userModel.create({ id: userId, username, passwordHash: hashedPassword, role: role || 'user' });
           return new Response(JSON.stringify({ id: userId }), { status: 201 });
         } catch (e: any) {
           if (e.message?.includes("UNIQUE constraint failed")) {
@@ -128,10 +131,8 @@ export async function handleAccountRequest(request: Request, env: Env, user: Use
         const targetId = pathParts[3];
         if (targetId === user.id) return new Response("Cannot delete yourself", { status: 400 });
         
-        // 1. 先删除该用户的所有 Profile (级联清理日志和规则)
-        await env.DB.prepare("DELETE FROM profiles WHERE owner_id = ?").bind(targetId).run();
-        // 2. 再删除用户本人
-        await env.DB.prepare("DELETE FROM users WHERE id = ?").bind(targetId).run();
+        await profileModel.deleteByOwner(targetId);
+        await userModel.delete(targetId);
         
         return new Response(null, { status: 204 });
       }

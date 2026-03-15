@@ -10,8 +10,9 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
   const url = new URL(request.url);
   const pathParts = url.pathname.split('/').filter(Boolean); // ['api', 'profiles', ':id', ...]
   const profileModel = new ProfileModel(env.DB);
+  const logModel = new LogModel(env.DB);
 
-  // 处理列表和创建 (无 ID)
+  // 处理列表和创建 (/api/profiles)
   if (pathParts.length === 2) {
     if (!user) return new Response("Unauthorized", { status: 401 });
 
@@ -33,16 +34,15 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
         log_retention_days: 30,
         default_policy: 'ALLOW'
       };
-      await env.DB.prepare("INSERT INTO profiles (id, owner_id, name, settings, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)")
-        .bind(newId, user.id, body.name || "Unnamed Profile", JSON.stringify(defaultSettings), Math.floor(Date.now() / 1000), Math.floor(Date.now() / 1000)).run();
+      await profileModel.create({ id: newId, owner_id: user.id, name: body.name || "Unnamed Profile", settings: defaultSettings });
       return new Response(JSON.stringify({ id: newId }), { status: 201 });
     }
   }
 
-  // 处理特定 Profile (有 ID)
+  // 处理特定 Profile (/api/profiles/:id)
   if (pathParts.length >= 3) {
     const profileId = pathParts[2];
-    const profile = await env.DB.prepare("SELECT * FROM profiles WHERE id = ?").bind(profileId).first<Profile>();
+    const profile = await profileModel.getById(profileId);
     
     if (!profile) return new Response("Profile Not Found", { status: 404 });
 
@@ -56,7 +56,7 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
 
     // DELETE /api/profiles/:id
     if (pathParts.length === 3 && request.method === 'DELETE') {
-      await env.DB.prepare("DELETE FROM profiles WHERE id = ?").bind(profileId).run();
+      await profileModel.delete(profileId);
       return new Response(null, { status: 204 });
     }
 
@@ -64,9 +64,8 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
     if (pathParts.length === 3 && request.method === 'PATCH') {
       const { name } = await request.json() as { name: string };
       if (!name) return new Response("The name cannot be empty", { status: 400 });
-      await env.DB.prepare("UPDATE profiles SET name = ?, updated_at = ? WHERE id = ?")
-        .bind(name, Math.floor(Date.now() / 1000), profileId).run();
-      await pipeline.clearCache(profileId);
+      await profileModel.updateName(profileId, name);
+      ctx.waitUntil(pipeline.clearCache(profileId));
       return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -81,7 +80,6 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
     if (pathParts[3] === 'settings' && request.method === 'PATCH') {
       const newSettings = await request.json() as ProfileSettings;
       await profileModel.updateSettings(profileId, newSettings);
-      const logModel = new LogModel(env.DB);
       const days = newSettings.log_retention_days || 30;
       const threshold = Math.floor(Date.now() / 1000 - (days * 24 * 3600));
       ctx.waitUntil(logModel.cleanup(profileId, threshold));
@@ -144,14 +142,7 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
         since = Math.max(since, retentionThreshold);
       }
 
-      let queryStr = "SELECT l.*, p.name as profile_name FROM logs l JOIN profiles p ON l.profile_id = p.id WHERE l.profile_id = ? AND l.timestamp >= ? AND l.timestamp <= ?";
-      let params: any[] = [profileId, since, until];
-      if (status) { queryStr += " AND l.action = ?"; params.push(status); }
-      if (search) { queryStr += " AND l.domain LIKE ?"; params.push(`%${search}%`); }
-      if (before) { queryStr += " AND l.timestamp < ?"; params.push(parseInt(before)); }
-      queryStr += " ORDER BY l.timestamp DESC LIMIT 50";
-
-      const { results } = await env.DB.prepare(queryStr).bind(...params).all();
+      const results = await logModel.getLogs(profileId, { since, until, status: status || undefined, search: search || undefined, before: before ? parseInt(before) : undefined });
       return new Response(JSON.stringify(results), { headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -196,7 +187,7 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
 				</dict>
 			</array>
 			<key>PayloadDescription</key>
-			<string>Obex DNS protects your Internet traffic</string>
+			<string>Obex DNS protects your network traffic</string>
 			<key>PayloadDisplayName</key>
 			<string>Obex DoH (${profile.name})</string>
 			<key>PayloadIdentifier</key>
@@ -212,7 +203,7 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
 		</dict>
 	</array>
 	<key>PayloadDescription</key>
-	<string>Obex DNS protects your Internet traffic</string>
+	<string>Obex DNS protects your network traffic</string>
 	<key>PayloadDisplayName</key>
 	<string>Obex - ${profile.name}</string>
 	<key>PayloadIdentifier</key>
@@ -253,15 +244,8 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
         }
       }
       
-      const [summary, trend, topAllowed, topBlocked, clients, destinations] = await Promise.all([
-        env.DB.prepare("SELECT action, COUNT(*) as count FROM logs WHERE profile_id = ? AND timestamp >= ? AND timestamp <= ? GROUP BY action").bind(profileId, since, until).all(),
-        env.DB.prepare(`SELECT ${interval} as timestamp, action, COUNT(*) as count FROM logs WHERE profile_id = ? AND timestamp >= ? AND timestamp <= ? GROUP BY ${interval}, action ORDER BY timestamp ASC`).bind(profileId, since, until).all(),
-        env.DB.prepare("SELECT domain, COUNT(*) as count FROM logs WHERE profile_id = ? AND timestamp >= ? AND timestamp <= ? AND action = 'PASS' GROUP BY domain ORDER BY count DESC LIMIT 10").bind(profileId, since, until).all(),
-        env.DB.prepare("SELECT domain, COUNT(*) as count FROM logs WHERE profile_id = ? AND timestamp >= ? AND timestamp <= ? AND action = 'BLOCK' GROUP BY domain ORDER BY count DESC LIMIT 10").bind(profileId, since, until).all(),
-        env.DB.prepare("SELECT client_ip, geo_country, COUNT(*) as count FROM logs WHERE profile_id = ? AND timestamp >= ? AND timestamp <= ? GROUP BY client_ip, geo_country ORDER BY count DESC LIMIT 10").bind(profileId, since, until).all(),
-        env.DB.prepare("SELECT dest_geoip, COUNT(*) as count FROM logs WHERE profile_id = ? AND timestamp >= ? AND timestamp <= ? AND dest_geoip IS NOT NULL GROUP BY dest_geoip ORDER BY count DESC LIMIT 10").bind(profileId, since, until).all()
-      ]);
-      return new Response(JSON.stringify({ summary: summary.results, trend: trend.results, top_allowed: topAllowed.results, top_blocked: topBlocked.results, clients: clients.results, destinations: destinations.results }), { headers: { 'Content-Type': 'application/json' } });
+      const analytics = await logModel.getAnalytics(profileId, since, until, interval);
+      return new Response(JSON.stringify(analytics), { headers: { 'Content-Type': 'application/json' } });
     }
 
     // 子资源路由: /api/profiles/:id/lists

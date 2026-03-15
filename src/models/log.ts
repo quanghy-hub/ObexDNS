@@ -27,13 +27,23 @@ export class LogModel {
     return result.success;
   }
 
-  async getRecent(profileId: string, limit: number = 50): Promise<ResolutionLog[]> {
-    return await this.db.prepare(
-      "SELECT * FROM logs WHERE profile_id = ? ORDER BY timestamp DESC LIMIT ?"
-    )
-      .bind(profileId, limit)
-      .all<ResolutionLog>()
-      .then(res => res.results);
+  async getLogs(profileId: string, options: { since: number, until: number, status?: string, search?: string, before?: number, limit?: number }): Promise<ResolutionLog[]> {
+    let queryStr = "SELECT l.*, p.name as profile_name FROM logs l JOIN profiles p ON l.profile_id = p.id WHERE l.profile_id = ? AND l.timestamp >= ? AND l.timestamp <= ?";
+    let params: any[] = [profileId, options.since, options.until];
+    
+    if (options.status) { queryStr += " AND l.action = ?"; params.push(options.status); }
+    if (options.search) { queryStr += " AND l.domain LIKE ?"; params.push(`%${options.search}%`); }
+    if (options.before) { queryStr += " AND l.timestamp < ?"; params.push(options.before); }
+    
+    queryStr += ` ORDER BY l.timestamp DESC LIMIT ${options.limit || 50}`;
+    
+    const { results } = await this.db.prepare(queryStr).bind(...params).all<ResolutionLog>();
+    return results;
+  }
+
+  async deleteByOwner(ownerId: string): Promise<boolean> {
+    const result = await this.db.prepare("DELETE FROM logs WHERE profile_id IN (SELECT id FROM profiles WHERE owner_id = ?)").bind(ownerId).run();
+    return result.success;
   }
 
   async cleanup(profileId: string, olderThanTimestamp: number): Promise<number> {
@@ -43,5 +53,17 @@ export class LogModel {
       .bind(profileId, olderThanTimestamp)
       .run();
     return result.meta.changes || 0;
+  }
+
+  async getAnalytics(profileId: string, since: number, until: number, interval: string) {
+    const [summary, trend, topAllowed, topBlocked, clients, destinations] = await Promise.all([
+      this.db.prepare("SELECT action, COUNT(*) as count FROM logs WHERE profile_id = ? AND timestamp >= ? AND timestamp <= ? GROUP BY action").bind(profileId, since, until).all(),
+      this.db.prepare(`SELECT ${interval} as timestamp, action, COUNT(*) as count FROM logs WHERE profile_id = ? AND timestamp >= ? AND timestamp <= ? GROUP BY ${interval}, action ORDER BY timestamp ASC`).bind(profileId, since, until).all(),
+      this.db.prepare("SELECT domain, COUNT(*) as count FROM logs WHERE profile_id = ? AND timestamp >= ? AND timestamp <= ? AND action = 'PASS' GROUP BY domain ORDER BY count DESC LIMIT 10").bind(profileId, since, until).all(),
+      this.db.prepare("SELECT domain, COUNT(*) as count FROM logs WHERE profile_id = ? AND timestamp >= ? AND timestamp <= ? AND action = 'BLOCK' GROUP BY domain ORDER BY count DESC LIMIT 10").bind(profileId, since, until).all(),
+      this.db.prepare("SELECT client_ip, geo_country, COUNT(*) as count FROM logs WHERE profile_id = ? AND timestamp >= ? AND timestamp <= ? GROUP BY client_ip, geo_country ORDER BY count DESC LIMIT 10").bind(profileId, since, until).all(),
+      this.db.prepare("SELECT dest_geoip, COUNT(*) as count FROM logs WHERE profile_id = ? AND timestamp >= ? AND timestamp <= ? AND dest_geoip IS NOT NULL GROUP BY dest_geoip ORDER BY count DESC LIMIT 10").bind(profileId, since, until).all()
+    ]);
+    return { summary: summary.results, trend: trend.results, top_allowed: topAllowed.results, top_blocked: topBlocked.results, clients: clients.results, destinations: destinations.results };
   }
 }

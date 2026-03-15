@@ -33,18 +33,30 @@ export class ProfileModel {
       .bind(ownerId, name).first<Profile | null>();
   }
 
-  async create(profile: Omit<Profile, "created_at" | "updated_at">): Promise<boolean> {
+  async create(profile: { id: string, owner_id: string, name: string, settings: ProfileSettings }): Promise<boolean> {
     const now = Math.floor(Date.now() / 1000);
     const result = await this.db.prepare(
       "INSERT INTO profiles (id, owner_id, name, settings, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
     )
-      .bind(profile.id, profile.owner_id, profile.name, profile.settings, now, now)
+      .bind(profile.id, profile.owner_id, profile.name, JSON.stringify(profile.settings), now, now)
       .run();
     return result.success;
   }
 
   async delete(id: string): Promise<boolean> {
     const result = await this.db.prepare("DELETE FROM profiles WHERE id = ?").bind(id).run();
+    return result.success;
+  }
+
+  async deleteByOwner(ownerId: string): Promise<boolean> {
+    const result = await this.db.prepare("DELETE FROM profiles WHERE owner_id = ?").bind(ownerId).run();
+    return result.success;
+  }
+
+  async updateName(id: string, name: string): Promise<boolean> {
+    const now = Math.floor(Date.now() / 1000);
+    const result = await this.db.prepare("UPDATE profiles SET name = ?, updated_at = ? WHERE id = ?")
+      .bind(name, now, id).run();
     return result.success;
   }
 
