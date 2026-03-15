@@ -23,15 +23,15 @@ export async function handleAccountRequest(request: Request, env: Env, user: Use
     if (pathParts[2] === 'me' && request.method === 'PATCH') {
       const { username: newUsername } = await request.json() as any;
       if (!newUsername || !/^[a-zA-Z0-9]{5,15}$/.test(newUsername)) {
-        return new Response("用户名格式错误：仅限 5 至 15 位英文字母或数字", { status: 400 });
+        return new Response("Username format error: Only 5 to 15 English letters or numbers are allowed.", { status: 400 });
       }
 
       try {
         await env.DB.prepare("UPDATE users SET username = ? WHERE id = ?").bind(newUsername, user.id).run();
         return new Response(JSON.stringify({ success: true }));
       } catch (e: any) {
-        if (e.message?.includes("UNIQUE constraint failed")) return new Response("该用户名已被占用", { status: 400 });
-        return new Response("更新失败", { status: 500 });
+        if (e.message?.includes("UNIQUE constraint failed")) return new Response("The username is already taken", { status: 400 });
+        return new Response("Failed to update username", { status: 500 });
       }
     }
 
@@ -40,13 +40,13 @@ export async function handleAccountRequest(request: Request, env: Env, user: Use
       const { oldPassword, newPassword } = await request.json() as any;
 
       if (!newPassword || newPassword.length < 8 || newPassword.length > 100 || !/(?=.*[a-zA-Z])(?=.*[0-9])/.test(newPassword)) {
-        return new Response("新密码格式错误：长度至少 8 位，且必须包含字母和数字", { status: 400 });
+        return new Response("New password format error: Length must be at least 8 characters and include both letters and numbers.", { status: 400 });
       }
       
       // 验证旧密码
       const dbUser = await env.DB.prepare("SELECT hashed_password FROM users WHERE id = ?").bind(user.id).first<any>();
       if (!dbUser || !(await verifyPassword(oldPassword, dbUser.hashed_password))) {
-        return new Response("当前密码错误", { status: 400 });
+        return new Response("Current password is incorrect", { status: 400 });
       }
 
       const hashedPassword = await hashPassword(newPassword);
@@ -63,7 +63,7 @@ export async function handleAccountRequest(request: Request, env: Env, user: Use
     // DELETE /api/account/me (注销并删除账号)
     if (pathParts[2] === 'me' && request.method === 'DELETE') {
       if (RBAC.isAdmin(user)) {
-        return new Response("管理员账号不能直接删除，请先降级或由其他管理员处理", { status: 400 });
+        return new Response("Administrator accounts cannot be deleted directly. Please downgrade or have another administrator handle this.", { status: 400 });
       }
 
       // 删除关联的所有配置 (logs, rules, lists 会通过级联删除自动清理)
@@ -100,11 +100,11 @@ export async function handleAccountRequest(request: Request, env: Env, user: Use
         const { username, password, role } = await request.json() as any;
         
         if (!username || !/^[a-zA-Z0-9]{5,15}$/.test(username)) {
-          return new Response("用户名格式错误：仅限 5 至 15 位英文字母或数字", { status: 400 });
+          return new Response("Username format error: Only 5 to 15 English letters or numbers are allowed.", { status: 400 });
         }
 
         if (!password || password.length < 8 || password.length > 100 || !/(?=.*[a-zA-Z])(?=.*[0-9])/.test(password)) {
-          return new Response("密码格式错误：长度至少 8 位，且必须包含字母和数字", { status: 400 });
+          return new Response("Password format error: Length must be at least 8 characters and include both letters and numbers.", { status: 400 });
         }
 
         const hashedPassword = await hashPassword(password);
@@ -117,16 +117,16 @@ export async function handleAccountRequest(request: Request, env: Env, user: Use
           return new Response(JSON.stringify({ id: userId }), { status: 201 });
         } catch (e: any) {
           if (e.message?.includes("UNIQUE constraint failed")) {
-            return new Response("该用户名已被占用", { status: 400 });
+            return new Response("The username is already taken", { status: 400 });
           }
-          return new Response("数据库错误", { status: 500 });
+          return new Response("Database error", { status: 500 });
         }
       }
 
       // DELETE /api/admin/users/:id
       if (request.method === 'DELETE' && pathParts[3]) {
         const targetId = pathParts[3];
-        if (targetId === user.id) return new Response("不能删除自己", { status: 400 });
+        if (targetId === user.id) return new Response("Cannot delete yourself", { status: 400 });
         
         // 1. 先删除该用户的所有 Profile (级联清理日志和规则)
         await env.DB.prepare("DELETE FROM profiles WHERE owner_id = ?").bind(targetId).run();

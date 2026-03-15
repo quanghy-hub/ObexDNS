@@ -11,11 +11,11 @@ export async function handleAuthRequest(request: Request, env: Env): Promise<Res
     const { username, password } = await request.json() as any;
     
     if (!/^[a-zA-Z0-9]{5,15}$/.test(username)) {
-      return new Response("用户名格式错误：仅限5 到 15 位英文字母或数字", { status: 400 });
+      return new Response("Username format error: Only 5 to 15 English letters or numbers are allowed.", { status: 400 });
     }
 
     if (!password || password.length < 8 || password.length > 100 || !/(?=.*[a-zA-Z])(?=.*[0-9])/.test(password)) {
-      return new Response("密码格式错误：长度至少 8 位，且必须包含字母和数字", { status: 400 });
+      return new Response("Password format error: Length must be at least 8 characters and include both letters and numbers.", { status: 400 });
     }
 
     const hashedPassword = await hashPassword(password);
@@ -40,7 +40,7 @@ export async function handleAuthRequest(request: Request, env: Env): Promise<Res
       });
     } catch (e: any) {
       if (e.message?.includes("UNIQUE constraint failed")) {
-        return new Response("该用户名已被占用", { status: 400 });
+        return new Response("The username is already taken", { status: 400 });
       }
       // 暂时返回具体的错误信息以便排查 500 错误
       return new Response(`Error creating user: ${e.message}`, { status: 500 });
