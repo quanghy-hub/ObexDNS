@@ -24,7 +24,7 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
     if (request.method === 'POST') {
       const body = await request.json() as { name: string };
       const existing = await profileModel.findByName(user.id, body.name);
-      if (existing) return new Response("该配置名称已存在", { status: 400 });
+      if (existing) return new Response("The profile name already exists", { status: 400 });
 
       const newId = Math.random().toString(36).substring(2, 8);
       const defaultSettings: ProfileSettings = {
@@ -34,7 +34,7 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
         default_policy: 'ALLOW'
       };
       await env.DB.prepare("INSERT INTO profiles (id, owner_id, name, settings, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)")
-        .bind(newId, user.id, body.name || "未命名配置", JSON.stringify(defaultSettings), Math.floor(Date.now() / 1000), Math.floor(Date.now() / 1000)).run();
+        .bind(newId, user.id, body.name || "Unnamed Profile", JSON.stringify(defaultSettings), Math.floor(Date.now() / 1000), Math.floor(Date.now() / 1000)).run();
       return new Response(JSON.stringify({ id: newId }), { status: 201 });
     }
   }
@@ -63,7 +63,7 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
     // PATCH /api/profiles/:id (用于修改名称等基础信息)
     if (pathParts.length === 3 && request.method === 'PATCH') {
       const { name } = await request.json() as { name: string };
-      if (!name) return new Response("名称不能为空", { status: 400 });
+      if (!name) return new Response("The name cannot be empty", { status: 400 });
       await env.DB.prepare("UPDATE profiles SET name = ?, updated_at = ? WHERE id = ?")
         .bind(name, Math.floor(Date.now() / 1000), profileId).run();
       await pipeline.clearCache(profileId);
@@ -196,7 +196,7 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
 				</dict>
 			</array>
 			<key>PayloadDescription</key>
-			<string>Obex DNS 保护您的网络流量</string>
+			<string>Obex DNS protects your network traffic</string>
 			<key>PayloadDisplayName</key>
 			<string>Obex DoH (${profile.name})</string>
 			<key>PayloadIdentifier</key>
@@ -212,7 +212,7 @@ export async function handleProfilesRequest(request: Request, env: Env, user: Us
 		</dict>
 	</array>
 	<key>PayloadDescription</key>
-	<string>Obex DNS 保护您的网络流量</string>
+	<string>Obex DNS protects your network traffic</string>
 	<key>PayloadDisplayName</key>
 	<string>Obex - ${profile.name}</string>
 	<key>PayloadIdentifier</key>
