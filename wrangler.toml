@@ -38,7 +38,7 @@ invocation_logs = true
 enabled = true
 
 [vars]
-IP_REGION_APAC='[{"ip":"198.41.222.102","area":"SG"},{"ip":"173.245.59.246","area":"SG"},{"ip":"198.41.208.229","area":"HK"},{"ip":"198.41.208.229","area":"HK"}]'
+IP_REGION_APAC='[{"ip":"198.41.222.102","area":"SG"},{"ip":"173.245.59.246","area":"SG"},{"ip":"104.18.47.174","area":"HK"},{"ip":"104.19.50.3","area":"HK"}]'
 IP_REGION_NAE='[]'
 IP_REGION_NAW='[]'
 IP_REGION_EU='[]'
