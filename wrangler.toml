@@ -25,7 +25,7 @@ crons = ["0 * * * *"]
 
 [placement]
 mode = "targeted"
-region = "aws:ap-east1"
+region = "aws:ap-southeast-1"
 
 [observability]
 enabled = true
