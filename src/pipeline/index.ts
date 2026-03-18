@@ -11,7 +11,11 @@ export const pipeline = {
   async process(request: Request, query: DNSQuery, context: Context): Promise<ResolutionResult> {
     const timings: Record<string, number> = {};
     let mark = context.startTime;
-    const track = (name: string) => { const now = Date.now(); timings[name] = (timings[name] || 0) + (now - mark); mark = now; };
+    const track = (name: string) => {
+      const now = Date.now();
+      timings[name] = (timings[name] || 0) + (now - mark);
+      mark = now;
+    };
 
     // 1. 特殊域名 & 缓存检查 (L1)
     if (query.name.toLowerCase() === 'obex' && query.type === 'TXT') {
@@ -28,7 +32,7 @@ export const pipeline = {
         response[0] = query.raw[0];
         response[1] = query.raw[1];
       }
-      
+
       const latency = Date.now() - context.startTime;
       return {
         answer: response,
