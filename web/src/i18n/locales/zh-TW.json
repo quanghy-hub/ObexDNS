@@ -63,7 +63,7 @@
   "setup": {
     "title": "安裝指南",
     "subtitle": "設定裝置以使用 Obex DNS 掌控您的網際網路安全。",
-    "regionOptimization": "連線地區最佳化 (Beta)",
+    "regionOptimization": "連線地區最佳化 (Windows)",
     "otherRegion": "其他地區",
     "copied": "已複製到剪貼簿",
     "verifyConnection": "驗證您的連線",

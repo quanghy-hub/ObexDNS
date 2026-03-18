@@ -63,7 +63,7 @@
   "setup": {
     "title": "Setup Guide",
     "subtitle": "Configure your device to use Obex DNS and take control of your internet security.",
-    "regionOptimization": "Regional Optimization (Beta)",
+    "regionOptimization": "Regional Optimization (Windows)",
     "otherRegion": "Other Regions",
     "copied": "Copied to clipboard",
     "verifyConnection": "Verify Your Connection",

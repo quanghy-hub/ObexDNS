@@ -63,7 +63,7 @@
   "setup": {
     "title": "安装指南",
     "subtitle": "配置设备以使用 Obex DNS 主掌您的互联网安全。",
-    "regionOptimization": "接入地区优化 (Beta)",
+    "regionOptimization": "接入地区优化 (Windows)",
     "otherRegion": "其他地区",
     "copied": "已复制到剪贴板",
     "verifyConnection": "验证您的连接",
