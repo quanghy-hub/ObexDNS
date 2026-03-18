@@ -25,7 +25,7 @@ crons = ["0 * * * *"]
 
 [placement]
 mode = "targeted"
-region = "aws:ap-southeast-1"
+region = "aws:ap-east-1"
 
 [observability]
 enabled = true
@@ -33,9 +33,11 @@ enabled = true
 [observability.logs]
 enabled = true
 invocation_logs = true
+head_sampling_rate = 0.3
 
 [observability.traces]
 enabled = true
+head_sampling_rate = 0.05
 
 [vars]
 IP_REGION_APAC='[{"ip":"198.41.222.102","area":"SG"},{"ip":"173.245.59.246","area":"SG"},{"ip":"104.18.47.174","area":"HK"},{"ip":"104.19.50.3","area":"HK"}]'
