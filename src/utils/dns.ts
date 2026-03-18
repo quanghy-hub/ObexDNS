@@ -208,16 +208,49 @@ export function parseDNSAnswer(raw: Uint8Array): { type: string; data: string; t
     if (type === "A" && rdLength === 4) {
       data = `${raw[offset]}.${raw[offset+1]}.${raw[offset+2]}.${raw[offset+3]}`;
     } else if (type === "AAAA" && rdLength === 16) {
-      const parts = [];
-      for (let j = 0; j < 16; j += 2) {
-        parts.push(((raw[offset + j] << 8) | raw[offset + j + 1]).toString(16));
-      }
-      data = parts.join(':').replace(/(:0)+:/, '::');
+        const parts = [];
+        for (let j = 0; j < 16; j += 2) {
+            parts.push(((raw[offset + j] << 8) | raw[offset + j + 1]).toString(16));
+        }
+        // 寻找最长的连续 '0' 序列进行压缩
+        let bestStart = -1, bestLen = 0;
+        let currentStart = -1, currentLen = 0;
+        for (let i = 0; i < parts.length; i++) {
+            if (parts[i] === '0') {
+                if (currentStart === -1) currentStart = i;
+                currentLen++;
+            } else {
+                if (currentLen > bestLen) {
+                    bestStart = currentStart;
+                    bestLen = currentLen;
+                }
+                currentStart = -1;
+                currentLen = 0;
+            }
+        }
+        if (currentLen > bestLen) {
+            bestStart = currentStart;
+            bestLen = currentLen;
+        }
+        
+        if (bestLen > 1) {
+            // 使用 '::' 替换最长的 '0' 序列
+            const replacement = (bestStart === 0 || bestStart + bestLen === parts.length) ? ':' : '';
+            parts.splice(bestStart, bestLen, replacement);
+        }
+        data = parts.join(':').replace(':::', '::');
     } else if (type === "CNAME" || type === "NS" || type === "PTR") {
       data = decodeName(raw, offset).name;
     } else if (type === "TXT") {
-      const txtLen = raw[offset];
-      data = String.fromCharCode(...raw.slice(offset + 1, offset + 1 + txtLen));
+      // 正确处理包含多个字符串的 TXT 记录
+      let txtOffset = offset;
+      const txtParts = [];
+      while (txtOffset < offset + rdLength) {
+          const len = raw[txtOffset];
+          txtParts.push(String.fromCharCode(...raw.slice(txtOffset + 1, txtOffset + 1 + len)));
+          txtOffset += len + 1;
+      }
+      data = txtParts.join("");
     } else if (type === "HTTPS" || type === "SVCB") {
       // HTTPS/SVCB 格式: 优先级(2字节) + 目标域名(变长) + 参数(变长)
       const priority = (raw[offset] << 8) | raw[offset + 1];
@@ -281,12 +314,36 @@ export function buildResponse(queryRaw: Uint8Array, type: string, value: string,
     if (type === 'A') {
       data = value.split('.').map(v => parseInt(v) || 0);
     } else if (type === 'AAAA') {
-      const parts = value.split(':');
-      for (const part of parts) {
-        const v = parseInt(part || "0", 16);
-        data.push((v >> 8) & 0xff);
-        data.push(v & 0xff);
-      }
+        // 正确解析 IPv6 地址，包括压缩形式
+        const bytes = new Uint8Array(16).fill(0);
+        if (value.includes('::')) {
+            const [left, right] = value.split('::');
+            const leftParts = left.split(':').filter(p => p);
+            const rightParts = right.split(':').filter(p => p);
+            
+            let i = 0;
+            for (const part of leftParts) {
+                const v = parseInt(part, 16);
+                bytes[i++] = (v >> 8) & 0xff;
+                bytes[i++] = v & 0xff;
+            }
+            
+            i = 16 - rightParts.length * 2;
+            for (const part of rightParts) {
+                const v = parseInt(part, 16);
+                bytes[i++] = (v >> 8) & 0xff;
+                bytes[i++] = v & 0xff;
+            }
+        } else {
+            const parts = value.split(':');
+            let i = 0;
+            for (const part of parts) {
+                const v = parseInt(part, 16);
+                bytes[i++] = (v >> 8) & 0xff;
+                bytes[i++] = v & 0xff;
+            }
+        }
+        data = Array.from(bytes);
     } else if (type === 'CNAME') {
       const labels = value.split('.');
       for (const label of labels) {
@@ -295,9 +352,14 @@ export function buildResponse(queryRaw: Uint8Array, type: string, value: string,
       }
       data.push(0);
     } else if (type === 'TXT') {
-      const safeVal = value.substring(0, 255);
-      data.push(safeVal.length);
-      for (let i = 0; i < safeVal.length; i++) data.push(safeVal.charCodeAt(i));
+      // 将值分割成多个255字节的块
+      for (let i = 0; i < value.length; i += 255) {
+          const chunk = value.substring(i, i + 255);
+          data.push(chunk.length);
+          for (let j = 0; j < chunk.length; j++) {
+              data.push(chunk.charCodeAt(j));
+          }
+      }
     }
 
     // 4. 构建 Answer Resource Record (RR)
