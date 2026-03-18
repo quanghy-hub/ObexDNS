@@ -535,21 +535,24 @@ export const LogsView: React.FC<LogsViewProps> = ({
                       <td className="px-4 py-3 text-center">
                         <code className="text-[10px]">{log.record_type}</code>
                       </td>
-                      <td className="px-4 py-3">
-                        <Tag
-                          minimal
-                          round
-                          fill
-                          intent={
-                            log.action === "PASS"
-                              ? Intent.SUCCESS
-                              : log.action === "BLOCK"
-                                ? Intent.DANGER
-                                : Intent.WARNING
-                          }
+                      <td className="px-4 py-3 text-center">
+                        <span
+                          className={clsx(
+                            "bp6-tag",
+                            "bp6-fill",
+                            "bp6-minimal",
+                            "bp6-round",
+                            {
+                              "bp6-intent-success": log.action === "PASS",
+                              "bp6-intent-danger": log.action === "BLOCK",
+                              "bp6-intent-warning": log.action === "REDIRECT",
+                            },
+                          )}
                         >
-                          {log.action}
-                        </Tag>
+                          <span className="bp6-text-overflow-ellipsis bp6-fill text-center">
+                            {log.action}
+                          </span>
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-500 italic truncate">
                         {log.reason || "-"}

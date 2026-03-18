@@ -411,7 +411,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <Server size={18} className="text-blue-500" />{" "}
             {t("settings.upstreamTitle")}
           </H5>
-          <FormGroup label={t("settings.dohUrl") + "/" + t("settings.dnsIP")}>
+          <FormGroup label={t("settings.dohUrl") + "/" + t("settings.classicDns")}>
             <InputGroup
               fill
               placeholder="https://dns.example.net/dns-query"
