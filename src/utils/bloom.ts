@@ -81,35 +81,36 @@ export class BloomFilter {
     }
     return true;
   }
-/**
- * 导出为原始二进制格式 (用于 R2 存储，避开 Base64 开销)
- * 结构: [4字节 size][4字节 hashes][位数组]
- */
-toUint8Array(): Uint8Array {
-  const res = new Uint8Array(8 + this.bitArray.length);
-  const view = new DataView(res.buffer);
-  view.setUint32(0, this.size, true);
-  view.setUint32(4, this.hashes, true);
-  res.set(this.bitArray, 8);
-  return res;
-}
 
-/**
- * 从原始二进制流恢复
- */
-static fromUint8Array(buffer: Uint8Array): BloomFilter {
-  const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-  const size = view.getUint32(0, true);
-  const hashes = view.getUint32(4, true);
-  const bitArray = buffer.slice(8);
-  return new BloomFilter(size, hashes, bitArray);
-}
+  /**
+   * 导出为原始二进制格式 (用于 R2 存储，避开 Base64 开销)
+   * 结构: [4字节 size][4字节 hashes][位数组]
+   */
+  toUint8Array(): Uint8Array {
+    const res = new Uint8Array(8 + this.bitArray.length);
+    const view = new DataView(res.buffer);
+    view.setUint32(0, this.size, true);
+    view.setUint32(4, this.hashes, true);
+    res.set(this.bitArray, 8);
+    return res;
+  }
 
-/**
- * 原有的 JSON 导出 (保持兼容)
- */
-dump(): { size: number; hashes: number; data: string } {
-// ...
+  /**
+   * 从原始二进制流恢复
+   */
+  static fromUint8Array(buffer: Uint8Array): BloomFilter {
+    const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    const size = view.getUint32(0, true);
+    const hashes = view.getUint32(4, true);
+    const bitArray = buffer.slice(8);
+    return new BloomFilter(size, hashes, bitArray);
+  }
+
+  /**
+   * 原有的 JSON 导出 (保持兼容)
+   */
+  dump(): { size: number; hashes: number; data: string } {
+    // ...
     let binary = '';
     const len = this.bitArray.byteLength;
     const chunk = 0x8000; // 32k chunks to avoid stack overflow
