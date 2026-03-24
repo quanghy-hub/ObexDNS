@@ -7,17 +7,15 @@ import {
   Intent,
   HTMLTable,
   Tag,
-  Callout,
   Menu,
   MenuItem,
   Popover,
   Position,
   OverlayToaster,
   Dialog,
-  H5,
 } from "@blueprintjs/core";
 import { useTranslation } from "react-i18next";
-import { Globe, Trash2, RefreshCw, Copy, ExternalLink } from "lucide-react";
+import { Trash2, RefreshCw, Copy, ExternalLink } from "lucide-react";
 
 interface FilteringViewProps {
   profileId: string;
@@ -186,8 +184,8 @@ export const FilteringView: React.FC<FilteringViewProps> = ({
           icon={<RefreshCw size={16} />}
           text={t("filtering.syncAll")}
           onClick={syncLists}
-          loading={syncing}
-          disabled={syncing}
+          loading={syncing || loading}
+          disabled={syncing || loading || lists.length === 0}
         />
       </div>
 
@@ -217,8 +215,8 @@ export const FilteringView: React.FC<FilteringViewProps> = ({
             icon="plus"
             onClick={() => addList()}
             className="shrink-0"
-            loading={syncing}
-            disabled={syncing}
+            loading={syncing || loading}
+            disabled={syncing || loading}
           >
             {t("filtering.addSubscription")}
           </Button>
