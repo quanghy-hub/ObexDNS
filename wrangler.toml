@@ -15,6 +15,11 @@ binding = "DB"
 database_name = "obex_db"
 database_id = "13d8c24f-064a-40d6-8b10-fa70bb3f79ab"
 
+# R2 Bucket for Bloom Filters and more
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "obex-storage"
+
 # KV Namespace for Cache (Deprecated, primary use Cache API)
 # [[kv_namespaces]]
 # binding = "CACHE_KV"

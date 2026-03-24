@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="web/src/assets/Obex_DNS_Logo-256.webp" alt="Obex DNS Logo" width="128">
+  <img src="web/src/assets/obex_cat_eye_logo-256.webp" alt="Obex DNS Logo" width="128">
   <h1>Obex DNS</h1>
   <p>基于 Cloudflare Workers & D1 的 Protective DNS 解析服务</p>
   <p align="center">

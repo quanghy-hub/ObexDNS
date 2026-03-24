@@ -11,7 +11,7 @@
     "loading": "加载中...",
     "errorNetwork": "网络错误",
     "confirmDelete": "确定要删除此配置吗？",
-    "confirmLogout": "确定登出？",
+    "confirmLogout": "确定注销登录吗？",
     "notFound": "404 - 页面未找到",
     "notFoundDesc": "您尝试访问的页面不存在或已被移除。",
     "backToHome": "返回首页",
@@ -26,7 +26,9 @@
     "invalidFormat": "无效文件格式",
     "import": "导入",
     "importSuccess": "配置成功导入",
-    "importError": "配置导入失败，请确保格式正确且稍后再试"
+    "importError": "配置导入失败，请确保格式正确且稍后再试",
+    "save": "保存",
+    "saveSuccess": "设置已保存"
   },
   "nav": {
     "setup": "安装",
@@ -58,7 +60,8 @@
     "formatErrorUsername": "用户名格式错误：仅限英文字母或数字，5 到 15 位",
     "formatErrorPassword": "密码格式错误：长度至少 8 位，且必须包含字母和数字",
     "authFailed": "认证失败，请检查用户名或密码",
-    "networkError": "网络错误，请稍后再试"
+    "networkError": "网络错误，请稍后再试",
+    "turnstileRequired": "请完成人机身份验证"
   },
   "setup": {
     "title": "安装指南",
@@ -230,7 +233,18 @@
     "presetOisdBig": "OISD Big (广告/恶意软件等拦截)",
     "presetOisdNsfw": "OISD NSFW (色情/震撼/成人内容拦截)",
     "presetAdGuard": "AdGuard AdServers (广告服务器)",
-    "presetStevenBlack": "StevenBlack Hosts (综合拦截)"
+    "presetStevenBlack": "StevenBlack Hosts (综合拦截)",
+    "syncTaskStarted": "开始同步任务",
+    "syncCheckComplete": "同步检查完成",
+    "syncTaskFailed": "同步失败",
+    "syncing": "同步中...",
+    "syncSuccess": "同步成功",
+    "syncError": "同步失败",
+    "deleteConfirm": "确认删除订阅？",
+    "deleteSuccess": "列表删除成功",
+    "deleteError": "列表删除失败",
+    "addSuccess": "列表添加成功",
+    "addError": "列表添加失败"
   },
   "settings": {
     "title": "配置设置",
@@ -335,7 +349,12 @@
     "clearLogsSuccess": "日志已成功清空",
     "confirmDeleteAccount": "警告：确定要注销并删除本账号吗？\n\n阁下所有 DNS 配置、自定义规则和查询日志将被永久删除。此操作不可逆！",
     "inactivityPolicy": "活跃度政策",
-    "inactivityDesc": "为节省资源，180 天内无任何解析活动的账号将被自动清理，包括其配置与所有关联日志。"
+    "inactivityDesc": "为节省资源，180 天内无任何解析活动的账号将被自动清理，包括其配置与所有关联日志。",
+    "systemSettings": "系统设置 (管理员)",
+    "adminOnlyView": "仅管理员可见",
+    "featureToggle": "功能开关",
+    "enableTurnstileSignup": "注册页面启用人机验证",
+    "enableTurnstileLogin": "登录页面启用人机验证"
   },
   "intro": {
     "item1Title": "Obex 保护性 DNS",

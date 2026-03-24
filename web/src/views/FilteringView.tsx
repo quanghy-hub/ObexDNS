@@ -7,76 +7,143 @@ import {
   Intent,
   HTMLTable,
   Tag,
-  Callout,
   Menu,
   MenuItem,
   Popover,
   Position,
+  OverlayToaster,
+  Dialog,
 } from "@blueprintjs/core";
 import { useTranslation } from "react-i18next";
+import { Trash2, RefreshCw, Copy, ExternalLink } from "lucide-react";
 
 interface FilteringViewProps {
   profileId: string;
+  toasterRef?: React.RefObject<OverlayToaster | null>;
 }
 
-export const FilteringView: React.FC<FilteringViewProps> = ({ profileId }) => {
+export const FilteringView: React.FC<FilteringViewProps> = ({
+  profileId,
+  toasterRef,
+}) => {
   const [lists, setLists] = useState<any[]>([]);
   const [newUrl, setNewUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const { t } = useTranslation();
 
-  const PRESET_LISTS = useMemo(() => [
-    { label: t("filtering.presetOisdBig"), url: "https://big.oisd.nl" },
-    { label: t("filtering.presetOisdNsfw"), url: "https://nsfw.oisd.nl" },
-    {
-      label: t("filtering.presetAdGuard"),
-      url: "https://adguardteam.github.io/AdguardFilters/BaseFilter/sections/adservers.txt",
-    },
-    {
-      label: t("filtering.presetStevenBlack"),
-      url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
-    },
-  ], [t]);
+  // 详情弹窗状态
+  const [selectedList, setSelectedList] = useState<any | null>(null);
+
+  const PRESET_LISTS = useMemo(
+    () => [
+      { label: t("filtering.presetOisdBig"), url: "https://big.oisd.nl" },
+      { label: t("filtering.presetOisdNsfw"), url: "https://nsfw.oisd.nl" },
+      {
+        label: t("filtering.presetAdGuard"),
+        url: "https://adguardteam.github.io/AdguardFilters/BaseFilter/sections/adservers.txt",
+      },
+      {
+        label: t("filtering.presetStevenBlack"),
+        url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
+      },
+    ],
+    [t],
+  );
 
   const fetchData = async () => {
     setLoading(true);
-    const res = await fetch(`/api/profiles/${profileId}/filters`);
-    const data = await res.json();
-    setLists(data.lists);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/profiles/${profileId}/filters`);
+      const data = await res.json();
+      setLists(data.lists);
+    } catch (e) {
+      console.error("Failed to fetch filters", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toasterRef?.current?.show({
+      message: t("setup.copied", "已复制到剪贴板"),
+      intent: Intent.SUCCESS,
+      icon: "duplicate",
+    });
   };
 
   const addList = async (urlToAdd?: string) => {
     const url = urlToAdd || newUrl;
     if (!url) return;
     setSyncing(true);
-    await fetch(`/api/profiles/${profileId}/lists`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
-    });
-    setNewUrl("");
-    fetchData();
-    setSyncing(false);
+    try {
+      const res = await fetch(`/api/profiles/${profileId}/lists`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      if (res.ok) {
+        toasterRef?.current?.show({
+          message: t("filtering.addSuccess"),
+          intent: Intent.SUCCESS,
+          icon: "tick",
+        });
+        setNewUrl("");
+        await fetchData();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const deleteList = async (id: number) => {
-    await fetch(`/api/profiles/${profileId}/lists`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    fetchData();
+    try {
+      const res = await fetch(`/api/profiles/${profileId}/lists`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        toasterRef?.current?.show({
+          message: t("filtering.deleteSuccess"),
+          intent: Intent.PRIMARY,
+          icon: "trash",
+        });
+        await fetchData();
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const syncLists = async () => {
     setSyncing(true);
-    await fetch(`/api/profiles/${profileId}/lists/sync`, {
-      method: "POST",
-    });
-    setTimeout(fetchData, 2000);
-    setSyncing(false);
+    try {
+      const res = await fetch(`/api/profiles/${profileId}/lists/sync`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        toasterRef?.current?.show({
+          message: t("filtering.syncTaskStarted"),
+          intent: Intent.PRIMARY,
+          icon: "cloud-download",
+        });
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await fetchData();
+        toasterRef?.current?.show({
+          message: t("filtering.syncCheckComplete"),
+          intent: Intent.SUCCESS,
+          icon: "tick",
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSyncing(false);
+    }
   };
 
   useEffect(() => {
@@ -93,7 +160,10 @@ export const FilteringView: React.FC<FilteringViewProps> = ({ profileId }) => {
           disabled={lists.some((l) => l.url === preset.url)}
           labelElement={
             <div className="flex flex-col items-end text-right">
-              <span className="text-[9px] opacity-85 max-w-xl truncate" title={preset.url}>
+              <span
+                className="text-[9px] opacity-85 max-w-xl truncate"
+                title={preset.url}
+              >
                 {preset.url}
               </span>
             </div>
@@ -108,16 +178,14 @@ export const FilteringView: React.FC<FilteringViewProps> = ({ profileId }) => {
       <div className="mb-8 flex justify-between items-end">
         <div>
           <h2 className="bp6-heading">{t("filtering.title")}</h2>
-          <p className="bp6-text-muted">
-            {t("filtering.subtitle")}
-          </p>
+          <p className="bp6-text-muted">{t("filtering.subtitle")}</p>
         </div>
         <Button
-          icon="refresh"
+          icon={<RefreshCw size={16} />}
           text={t("filtering.syncAll")}
           onClick={syncLists}
-          loading={syncing}
-          intent={Intent.NONE}
+          loading={syncing || loading}
+          disabled={syncing || loading || lists.length === 0}
         />
       </div>
 
@@ -133,7 +201,7 @@ export const FilteringView: React.FC<FilteringViewProps> = ({ profileId }) => {
             rightElement={
               <Popover
                 content={presetMenu}
-                position={Position.BOTTOM_LEFT}
+                position={Position.BOTTOM_RIGHT}
                 minimal={true}
                 usePortal={true}
               >
@@ -147,76 +215,93 @@ export const FilteringView: React.FC<FilteringViewProps> = ({ profileId }) => {
             icon="plus"
             onClick={() => addList()}
             className="shrink-0"
-            loading={syncing}
+            loading={syncing || loading}
+            disabled={syncing || loading}
           >
             {t("filtering.addSubscription")}
           </Button>
         </div>
-        <Callout
-          intent={Intent.PRIMARY}
-          icon="info-sign"
-          className="mt-4 border-none bg-blue-50/50 dark:bg-blue-900/10"
-        >
-          <div className="text-xs space-y-2">
-            <p className="font-bold">{t("filtering.supportedFormats")}</p>
-            <ul className="list-disc list-inside space-y-1 opacity-80">
-              <li>
-                <strong>AdGuard / uBlock:</strong> {t("filtering.formatAdGuard")}
-              </li>
-              <li>
-                <strong>Hosts 格式:</strong> {t("filtering.formatHosts")}
-              </li>
-            </ul>
-          </div>
-        </Callout>
       </Card>
 
-      {lists.length === 0 && !loading ? (
-        <Callout icon="warning-sign" title={t("filtering.noListsTitle")}>
-          {t("filtering.noListsDesc")}
-        </Callout>
-      ) : (
-        <HTMLTable interactive striped className="w-full">
-          <thead>
-            <tr>
-              <th>{t("filtering.tableUrl")}</th>
-              <th>{t("filtering.tableLastSync")}</th>
-              <th>{t("filtering.tableStatus")}</th>
-              <th className="text-right">{t("filtering.tableOps")}</th>
+      <HTMLTable interactive striped className="w-full">
+        <thead>
+          <tr>
+            <th>{t("filtering.tableUrl")}</th>
+            <th>{t("filtering.tableLastSync")}</th>
+            <th>{t("filtering.tableStatus")}</th>
+            <th className="text-right">{t("filtering.tableOps")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {lists.map((list) => (
+            <tr
+              key={list.id}
+              onClick={() => setSelectedList(list)}
+              className="cursor-pointer"
+            >
+              <td className="font-mono text-sm max-w-md truncate">
+                {list.url}
+              </td>
+              <td className="text-xs opacity-60">
+                {list.last_synced_at
+                  ? new Date(list.last_synced_at * 1000).toLocaleString()
+                  : t("filtering.neverSynced")}
+              </td>
+              <td>
+                <Tag
+                  intent={list.enabled ? Intent.SUCCESS : Intent.NONE}
+                  minimal
+                >
+                  {list.enabled
+                    ? t("filtering.enabled")
+                    : t("filtering.disabled")}
+                </Tag>
+              </td>
+              <td className="text-right" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  icon={<Trash2 size={14} />}
+                  variant="minimal"
+                  intent={Intent.DANGER}
+                  onClick={() => deleteList(list.id)}
+                />
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {lists.map((list) => (
-              <tr key={list.id}>
-                <td className="font-mono text-sm max-w-md truncate">
-                  {list.url}
-                </td>
-                <td className="text-xs opacity-60">
-                  {list.last_synced_at
-                    ? new Date(list.last_synced_at * 1000).toLocaleString()
-                    : t("filtering.neverSynced")}
-                </td>
-                <td>
-                  <Tag
-                    intent={list.enabled ? Intent.SUCCESS : Intent.NONE}
-                    minimal
-                  >
-                    {list.enabled ? t("filtering.enabled") : t("filtering.disabled")}
-                  </Tag>
-                </td>
-                <td className="text-right">
-                  <Button
-                    icon="trash"
-                    variant="minimal"
-                    intent={Intent.DANGER}
-                    onClick={() => deleteList(list.id)}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </HTMLTable>
-      )}
+          ))}
+        </tbody>
+      </HTMLTable>
+
+      <Dialog
+        isOpen={selectedList !== null}
+        onClose={() => setSelectedList(null)}
+        title={t("filtering.listDetails", "订阅详情")}
+        icon="info-sign"
+      >
+        <div className="p-6 space-y-4">
+          <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 break-all font-mono text-sm">
+            {selectedList?.url}
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs opacity-50">
+              {t("filtering.tableLastSync")}:{" "}
+              {selectedList?.last_synced_at
+                ? new Date(selectedList.last_synced_at * 1000).toLocaleString()
+                : "-"}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                icon={<Copy size={14} />}
+                text={t("setup.copyUrl", "复制链接")}
+                onClick={() => copyToClipboard(selectedList?.url)}
+              />
+              <Button
+                icon={<ExternalLink size={14} />}
+                text={t("setup.learnMore", "访问链接")}
+                onClick={() => window.open(selectedList?.url, "_blank")}
+              />
+            </div>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 };

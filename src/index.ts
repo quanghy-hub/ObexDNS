@@ -156,15 +156,19 @@ export default {
         console.error("[Cron] Global log cleanup failed:", e);
       }
 
-      // 3. 限制同步频率：每次仅同步最久没更新的 5 个 Profile
+      // 3. 限制同步频率：每次同步最久没更新且更新时间超过 24 小时的 10 个 Profile
       try {
+        const oneDayAgo = now - 86400;
         const { results: syncTargets } = await env.DB.prepare(
-          "SELECT id FROM profiles ORDER BY list_updated_at ASC LIMIT 5"
-        ).all<{ id: string }>();
+          "SELECT id FROM profiles WHERE list_updated_at IS NULL OR list_updated_at < ? ORDER BY list_updated_at ASC LIMIT 10"
+        ).bind(oneDayAgo).all<{ id: string }>();
 
         for (const target of syncTargets) {
           // 使用 waitUntil 确保即便同步较慢也不会阻塞 Cron 主进程
           ctx.waitUntil(syncProfileLists(target.id, env, ctx));
+        }
+        if (syncTargets.length > 0) {
+          console.log(`[Cron] Scheduled sync for ${syncTargets.length} profiles.`);
         }
       } catch (e) {
         console.error("[Cron] List sync scheduling failed:", e);

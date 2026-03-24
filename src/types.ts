@@ -1,8 +1,18 @@
-import { D1Database, KVNamespace } from "@cloudflare/workers-types";
+import { D1Database, R2Bucket, ExecutionContext as CFExecutionContext } from "@cloudflare/workers-types";
 
-export interface ExecutionContext {
-  waitUntil(promise: Promise<any>): void;
-  passThroughOnException(): void;
+export interface Env {
+  DB: D1Database;
+  BUCKET: R2Bucket;
+  ASSETS: any;
+  TURNSTILE_SECRET_KEY?: string;
+  [key: string]: any;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  role: 'admin' | 'user';
+  hashed_password?: string;
 }
 
 export interface ProfileSettings {
@@ -21,19 +31,16 @@ export interface ProfileSettings {
 }
 
 export interface Profile {
-  id: string; // 6-char ID
+  id: string;
   owner_id: string;
   name: string;
-  settings: string; // JSON string of ProfileSettings
+  settings: string;
   created_at: number;
   updated_at: number;
+  list_bloom?: string;
+  list_updated_at?: number;
 }
 
-export interface User {
-  id: string;
-  username: string;
-  role: 'admin' | 'user';
-}
 export interface Rule {
   id: number;
   profile_id: string;
@@ -53,37 +60,6 @@ export interface List {
   last_synced_at?: number;
 }
 
-export interface ResolutionLog {
-  profile_id: string;
-  timestamp: number;
-  client_ip: string;
-  geo_country?: string;
-  domain: string;
-  record_type: string;
-  action: 'PASS' | 'BLOCK' | 'REDIRECT' | 'FAIL';
-  reason?: string;
-  answer?: string; // Resolved IP(s) or CNAME
-  dest_geoip?: string; // JSON string of destination GeoIP
-  ecs?: string; // ECS info used (IP/Prefix)
-  profile_name?: string; // For frontend display
-  upstream?: string; // Upstream DoH URL used
-  latency?: number; // ms
-}
-
-export interface Env {
-  DB: D1Database;
-  CACHE_KV: KVNamespace;
-  ASSETS: { fetch: (request: Request) => Promise<Response> };
-  REGION_CONFIG_JSON?: string;
-}
-
-export interface Context {
-  profileId: string;
-  startTime: number;
-  env: Env;
-  ctx: ExecutionContext;
-}
-
 export interface DNSQuery {
   name: string;
   type: string;
@@ -95,13 +71,37 @@ export interface ResolutionResult {
   ttl: number;
   action: 'PASS' | 'BLOCK' | 'REDIRECT' | 'FAIL';
   reason?: string;
-  latency?: number; // ms
-  timings?: Record<string, number>; // Detailed breakdown
+  latency?: number;
+  timings?: Record<string, number>;
   diagnostics?: {
     upstream_url: string;
     method: string;
     status: number;
-    response_text?: string;
-    sent_dns_param?: string;
   };
+}
+
+export interface ResolutionLog {
+  id?: number;
+  profile_id: string;
+  timestamp: number;
+  client_ip: string;
+  geo_country: string;
+  domain: string;
+  record_type: string;
+  action: string;
+  reason?: string;
+  answer?: string;
+  dest_geoip?: string;
+  latency?: number;
+  ecs?: string;
+  upstream?: string;
+}
+
+export interface ExecutionContext extends CFExecutionContext {}
+
+export interface Context {
+  profileId: string;
+  startTime: number;
+  env: Env;
+  ctx: ExecutionContext;
 }

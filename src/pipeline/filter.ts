@@ -50,30 +50,30 @@ export const pipelineFilter = {
     }
     track('local_rules');
 
-    // 4. 外部列表过滤
-    if (bloom && bloom.test(domainLower)) {
-      track('bloom_check');
-      const cache = (caches as any).default;
-      const verdictCacheKey = `verdict_v2:${context.profileId}:${domainLower}`;
-      const cachedVerdict = await cacheUtils.get<string>(cache, verdictCacheKey);
-      
-      if (cachedVerdict === 'BLOCK') {
-        track('verdict_cache_hit');
-        return pipelineResolver.block(request, query, context, settings, "BLOCK", "External List (Cached)");
-      } else if (cachedVerdict !== 'PASS') {
-        const entry = await context.env.DB.prepare("SELECT domain FROM list_entries WHERE profile_id = ? AND domain = ?")
-          .bind(context.profileId, domainLower).first();
+    // 4. 外部列表过滤 (支持子域名后缀匹配，完全基于高精度布隆过滤器)
+    if (bloom) {
+      const segments = domainLower.split('.');
+      // 从长到短尝试匹配 (例如: a.b.c.com -> b.c.com -> c.com)
+      for (let i = 0; i < segments.length - 1; i++) {
+        const checkDomain = segments.slice(i).join('.');
         
-        if (entry) {
+        // 性能优化：先查 L2 缓存 (Verdict)
+        const cache = (caches as any).default;
+        const verdictCacheKey = `verdict_v3:${context.profileId}:${checkDomain}`;
+        const cachedVerdict = await cacheUtils.get<string>(cache, verdictCacheKey);
+        
+        if (cachedVerdict === 'BLOCK') {
+          track('verdict_cache_hit');
+          return pipelineResolver.block(request, query, context, settings, "BLOCK", `External List: ${checkDomain} (Cached)`);
+        }
+
+        if (bloom.test(checkDomain)) {
+          track('bloom_check');
+          // 降低假阳性率，直接信任布隆过滤器结果
           context.ctx.waitUntil(cacheUtils.set(cache, verdictCacheKey, 'BLOCK', 3600));
-          track('db_list_lookup');
-          return pipelineResolver.block(request, query, context, settings, "BLOCK", "External List");
-        } else {
-          context.ctx.waitUntil(cacheUtils.set(cache, verdictCacheKey, 'PASS', 3600));
-          track('db_list_lookup');
+          return pipelineResolver.block(request, query, context, settings, "BLOCK", `External List: ${checkDomain}`);
         }
       }
-    } else if (bloom) {
       track('bloom_check');
     }
 

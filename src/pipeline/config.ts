@@ -2,45 +2,83 @@ import { Context, ProfileSettings, Rule } from "../types";
 import { ProfileModel } from "../models/profile";
 import { BloomFilter } from "../utils/bloom";
 import { cacheUtils } from "../utils/cache";
-import { configCache } from "./cache";
+import { configCache, bloomMemoryMap } from "./cache";
 
-const CACHE_TTL_MS = 1800000; // 30分钟
+const BLOOM_MEM_TTL = 600000; // 内存保留 10 分钟
 
 export const pipelineConfig = {
   async load(context: Context, track: (name: string) => void): Promise<{ settings: ProfileSettings; rules: Rule[]; bloom?: BloomFilter } | null> {
-    const cachedConfig = configCache.get(context.profileId);
+    const { profileId, env, ctx } = context;
+
+    // 1. 检查 L1 Memory (Isolate Global)
+    const inMem = bloomMemoryMap.get(profileId);
+    const cachedConfig = configCache.get(profileId);
     
-    if (cachedConfig && (Date.now() - cachedConfig.timestamp < CACHE_TTL_MS)) {
-      track('load_config_mem');
-      return cachedConfig;
+    if (cachedConfig && inMem && (Date.now() - inMem.ts < BLOOM_MEM_TTL)) {
+      track('load_config_l1_mem');
+      return { ...cachedConfig, bloom: inMem.bloom };
     }
 
+    // 2. 检查 L2 Cache API
     const cache = (caches as any).default;
-    const cacheKey = `profile:${context.profileId}`;
-    const apiCached = await cacheUtils.get<any>(cache, cacheKey);
+    const profileCacheKey = `profile_v6:${profileId}`;
+    const bloomInternalUrl = `https://obex.local/bloom-bin/${profileId}`;
     
+    let apiCached = await cacheUtils.get<any>(cache, profileCacheKey);
+    let bloom: BloomFilter | undefined;
+
     if (apiCached) {
-      const settings = apiCached.settings;
-      const rules = apiCached.rules;
-      const bloom = apiCached.bloom ? BloomFilter.load(apiCached.bloom) : undefined;
-      configCache.set(context.profileId, { settings, rules, bloom, timestamp: Date.now() });
-      track('load_config_cache_api');
-      return { settings, rules, bloom };
+      const bloomRes = await cache.match(bloomInternalUrl);
+      if (bloomRes) {
+        track('load_bloom_l2_cache');
+        const buffer = await bloomRes.arrayBuffer();
+        bloom = BloomFilter.fromUint8Array(new Uint8Array(buffer));
+      }
+      
+      if (bloom) {
+        bloomMemoryMap.set(profileId, { bloom, ts: Date.now() });
+        configCache.set(profileId, apiCached);
+        return { ...apiCached, bloom };
+      }
     }
 
-    const profileModel = new ProfileModel(context.env.DB);
-    const profile = await profileModel.getById(context.profileId);
+    // 3. 回退到 D1 (配置) 和 R2 (布隆过滤器)
+    const profileModel = new ProfileModel(env.DB);
+    const profile = await profileModel.getById(profileId);
     if (!profile) return null;
     
     const settings = JSON.parse(profile.settings);
-    const rules = await profileModel.getRules(context.profileId);
-    const bloom = profile.list_bloom ? BloomFilter.load(JSON.parse(profile.list_bloom)) : undefined;
+    const rules = await profileModel.getRules(profileId);
     
-    const configToCache = { settings, rules, bloom: bloom?.dump() };
-    configCache.set(context.profileId, { settings, rules, bloom, timestamp: Date.now() });
-    context.ctx.waitUntil(cacheUtils.set(cache, cacheKey, configToCache, 1800));
-    track('load_config_db');
+    // 从 R2 直接加载
+    const r2Key = `bloom/${profileId}.bin`;
+    try {
+      const object = await env.BUCKET.get(r2Key);
+      if (object) {
+        track('load_bloom_l3_r2');
+        const buffer = await object.arrayBuffer();
+        const uint8 = new Uint8Array(buffer);
+        bloom = BloomFilter.fromUint8Array(uint8);
+
+        // 写入 L2 Cache API 供下次使用
+        ctx.waitUntil(cache.put(bloomInternalUrl, new Response(uint8, {
+          headers: { 
+            'Content-Type': 'application/octet-stream',
+            'Cache-Control': 'public, max-age=3600' 
+          }
+        })));
+      }
+    } catch (e) {
+      console.error("[Config] R2 loading failed:", e);
+    }
+
+    const config = { settings, rules };
+    if (bloom) bloomMemoryMap.set(profileId, { bloom, ts: Date.now() });
     
-    return { settings, rules, bloom };
+    configCache.set(profileId, { ...config, timestamp: Date.now() });
+    ctx.waitUntil(cacheUtils.set(cache, profileCacheKey, config, 1800));
+    
+    track('load_config_full_sync');
+    return { ...config, bloom };
   }
 };

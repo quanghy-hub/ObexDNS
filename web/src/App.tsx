@@ -48,7 +48,7 @@ import {
 } from "react-router-dom";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import { GitHubCorner } from "./components/GithubCorner";
-import LogoIcon from "./assets/Obex_DNS_Logo-256.webp";
+import LogoIcon from "./assets/obex_cat_eye_logo-256.webp";
 
 // --- 预加载工具函数 ---
 function lazyWithPreload<T extends React.ComponentType<any>>(
@@ -915,7 +915,10 @@ const ProfileRoutes = ({
           path="setup"
           element={<SetupView profileId={id} toasterRef={toasterRef} />}
         />
-        <Route path="filter" element={<FilteringView profileId={id} />} />
+        <Route
+          path="filter"
+          element={<FilteringView profileId={id} toasterRef={toasterRef} />}
+        />
         <Route
           path="rules"
           element={
