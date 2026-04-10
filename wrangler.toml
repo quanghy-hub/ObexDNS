@@ -2,7 +2,7 @@ name = "obex-dns"
 main = "src/index.ts"
 compatibility_date = "2026-02-28"
 compatibility_flags = ["nodejs_compat"]
-account_id = "edd3b2153e985b7379d40361254eb8bf"
+# account_id = ""
 minify = true
 
 [assets]
