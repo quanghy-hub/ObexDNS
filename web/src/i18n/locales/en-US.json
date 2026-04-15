@@ -61,7 +61,8 @@
     "formatErrorPassword": "Password error: At least 8 characters, must include letters and numbers",
     "authFailed": "Authentication failed, check username or password",
     "networkError": "Network error, please try again later",
-    "turnstileRequired": "Please complete the human verification"
+    "turnstileRequired": "Please complete the human verification",
+    "turnstileError": "Verification service failed to load, please check the Site Key or domain configuration"
   },
   "setup": {
     "title": "Setup Guide",

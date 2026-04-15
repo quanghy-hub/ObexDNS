@@ -61,7 +61,8 @@
     "formatErrorPassword": "密碼格式錯誤：長度至少 8 位，且必須包含字母和數字",
     "authFailed": "認證失敗，請檢查用戶名或密碼",
     "networkError": "網路錯誤，請稍後再試",
-    "turnstileRequired": "請完成人機身份驗證"
+    "turnstileRequired": "請完成人機身份驗證",
+    "turnstileError": "驗證服務加載失敗，請檢查 Site Key 或名稱配置"
   },
   "setup": {
     "title": "安裝指南",
