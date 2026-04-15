@@ -135,6 +135,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
   // Turnstile 相关
   const [turnstileReady, setTurnstileReady] = useState(!!window.turnstile);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileStatus, setTurnstileStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
   const turnstileRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
 
@@ -174,16 +175,22 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
           widgetIdRef.current = null;
         }
         
+        setTurnstileStatus('verifying');
         turnstileRef.current.innerHTML = "";
         const widgetId = window.turnstile.render(turnstileRef.current, {
           sitekey: authConfig.turnstile_site_key,
           callback: (token: string) => {
             setTurnstileToken(token);
+            setTurnstileStatus('success');
             setError("");
           },
-          "expired-callback": () => setTurnstileToken(null),
+          "expired-callback": () => {
+            setTurnstileToken(null);
+            setTurnstileStatus('idle');
+          },
           "error-callback": (err: any) => {
             console.error("Turnstile error:", err);
+            setTurnstileStatus('error');
             setError(t("auth.turnstileError", "Verification service failed to load. Please check your Site Key or domain settings."));
             setTurnstileToken(null);
           },
@@ -191,6 +198,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
         widgetIdRef.current = widgetId;
       } catch (e) {
         console.error("Turnstile render error:", e);
+        setTurnstileStatus('error');
       }
     }
 
@@ -253,7 +261,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
             {isTurnstileEnabled && authConfig?.turnstile_site_key && (
               <div className="py-2 flex justify-center min-h-[65px]"><div ref={turnstileRef} /></div>
             )}
-            <Button fill size="large" intent={Intent.PRIMARY} type="submit" loading={loading} className="mt-6 font-bold py-6 rounded-xl shadow-lg shadow-blue-500/20">{isLogin ? t("auth.loginBtn") : t("auth.signupBtn")}</Button>
+            <Button fill size="large" intent={Intent.PRIMARY} type="submit" loading={loading || turnstileStatus === 'verifying'} disabled={isTurnstileEnabled && !!authConfig?.turnstile_site_key && turnstileStatus !== 'success'} className="mt-6 font-bold py-6 rounded-xl shadow-lg shadow-blue-500/20">
+              {turnstileStatus === 'verifying' ? t("auth.verifying", "Verifying...") : (isLogin ? t("auth.loginBtn") : t("auth.signupBtn"))}
+            </Button>
           </form>
           <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 text-center">
             <button onClick={() => { setIsLogin(!isLogin); setError(""); setTurnstileToken(null); }} className="text-blue-600 dark:text-blue-400 font-semibold hover:underline bg-transparent border-none cursor-pointer text-sm">{isLogin ? t("auth.noAccount") : t("auth.haveAccount")}</button>

@@ -62,7 +62,8 @@
     "authFailed": "認證失敗，請檢查用戶名或密碼",
     "networkError": "網路錯誤，請稍後再試",
     "turnstileRequired": "請完成人機身份驗證",
-    "turnstileError": "驗證服務加載失敗，請檢查 Site Key 或名稱配置"
+    "turnstileError": "驗證服務加載失敗，請檢查 Site Key 或域名配置",
+    "verifying": "正在進行安全驗證..."
   },
   "setup": {
     "title": "安裝指南",
