@@ -103,7 +103,7 @@ When a DNS request arrives, it goes through the following processing stages:
 3.  **Local Rule Matching**:
     -   **Whitelist**: If hit, forwards directly to upstream and returns.
     -   **Redirection**: If hit, returns custom records.
-    -   **Blacklist**: If hit, returns NXDOMAIN.
+    -   **Blacklist**: If hit, returns NXDOMAIN, 0.0.0.0, or a custom result.
 4.  **External List Filtering**:
     -   Use a **Bloom filter** for fast filtering.
 5.  **Upstream Resolution**: If none of the above hit, requests the upstream DoH server based on configuration, with optional ECS support.

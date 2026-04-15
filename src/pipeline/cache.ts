@@ -15,14 +15,14 @@ export const dnsCache = new Map<string, any>();
 
 export const pipelineCache = {
   async clear(profileId: string) {
-    // 1. 清理 L1 (内存)
+    // 清理 L1 (内存)
     configCache.delete(profileId);
     bloomMemoryMap.delete(profileId);
     for (const key of dnsCache.keys()) {
       if (key.startsWith(`${profileId}:`)) dnsCache.delete(key);
     }
     
-    // 2. 清理 L2 (Cache API)
+    // 清理 L2 (Cache API)
     try {
       const cache = (caches as any).default;
       await Promise.all([

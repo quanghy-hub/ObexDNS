@@ -32,9 +32,9 @@ export class BloomFilter {
   /**
    * 初始化布隆过滤器
    * @param expectedItems 预期存储的条目数 (n)
-   * @param errorRate 假阳性率 (p)，默认 10^-6 (0.000001)
+   * @param errorRate 假阳性率 (p)，默认 10^-4 (0.0001)
    */
-  static create(expectedItems: number, errorRate: number = 0.000001): BloomFilter {
+  static create(expectedItems: number, errorRate: number = 0.0001): BloomFilter {
     const n = Math.max(expectedItems, 100);
     const p = errorRate;
     

@@ -17,14 +17,14 @@ export const pipelineFilter = {
   ): Promise<ResolutionResult | null> {
     const domainLower = query.name.toLowerCase();
 
-    // 1. 本地白名单
+    // 本地白名单
     const whitelist = rules.filter(r => r.type === 'ALLOW');
     if (DNSFilter.findMatch(query.name, whitelist)) {
       track('local_rules');
       return pipelineResolver.resolve(request, query, context, settings, "PASS", "Whitelist");
     }
 
-    // 2. 本地重定向
+    // 本地重定向
     const redirections = rules.filter(r => r.type === 'REDIRECT');
     const redirectRule = DNSFilter.findMatch(query.name, redirections);
     if (redirectRule) {
@@ -41,7 +41,7 @@ export const pipelineFilter = {
       }
     }
 
-    // 3. 本地黑名单
+    // 本地黑名单
     const blacklist = rules.filter(r => r.type === 'BLOCK');
     const blockRule = DNSFilter.findMatch(query.name, blacklist);
     if (blockRule) {
@@ -50,7 +50,7 @@ export const pipelineFilter = {
     }
     track('local_rules');
 
-    // 4. 外部列表过滤 (精确匹配)
+    // 外部列表过滤 (精确匹配)
     if (bloom) {
       const cache = (caches as any).default;
       const verdictCacheKey = `verdict_v3:${context.profileId}:${domainLower}`;

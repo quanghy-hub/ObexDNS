@@ -17,7 +17,7 @@ export const pipeline = {
       mark = now;
     };
 
-    // 1. 特殊域名 & 缓存检查 (L1)
+    // 特殊域名 & 缓存检查 (L1)
     if (query.name.toLowerCase() === 'obex' && query.type === 'TXT') {
       const answer = buildResponse(query.raw, 'TXT', context.profileId || 'obex');
       return { answer, ttl: 60, action: "PASS", reason: "Internal Verification", latency: Date.now() - context.startTime, timings: { total: Date.now() - context.startTime } };
@@ -44,15 +44,15 @@ export const pipeline = {
       };
     }
 
-    // 2. 加载配置
+    // 加载配置
     const config = await pipelineConfig.load(context, track);
     if (!config) return { answer: new Uint8Array(), ttl: 0, action: "FAIL", reason: "Profile Not Found" };
 
-    // 3. 匹配规则 (本地 + 外部)
+    // 匹配规则 (本地 + 外部)
     const matchResult = await pipelineFilter.match(request, query, context, config.settings, config.rules, config.bloom, track);
     if (matchResult) return { ...matchResult, timings: { ...timings, ...matchResult.timings } };
 
-    // 4. 默认策略 & 最终解析
+    // 默认策略 & 最终解析
     if (config.settings.default_policy === 'BLOCK') {
       const block = await pipelineResolver.block(request, query, context, config.settings, "BLOCK", "Default Policy");
       return { ...block, timings: { ...timings, ...block.timings } };

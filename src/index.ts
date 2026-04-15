@@ -91,10 +91,10 @@ export default {
         ctx.waitUntil((async () => {
           try {
             const clientIp = request.headers.get("CF-Connecting-IP") || "127.0.0.1";
-            // 1. 记录活跃连接（用于 Debug 页面）
+            // 记录活跃连接（用于 Debug 页面）
             await cacheUtils.set(cache, `active_dns:${clientIp}`, profileId, 60);
 
-            // 2. 记录账号/配置活跃时间 (每小时节流一次)
+            // 记录账号/配置活跃时间 (每小时节流一次)
             const nowSec = Math.floor(Date.now() / 1000);
             const lastActiveKey = `active_throttle:${profileId}`;
             const lastActiveThrottled = await cacheUtils.get<number>(cache, lastActiveKey);
@@ -142,21 +142,21 @@ export default {
       const now = Math.floor(Date.now() / 1000);
       const inactivityThreshold = now - (180 * 24 * 3600); // 180 天
 
-      // 1. 清理 180 天无活动的普通用户 (级联删除)
+      // 清理 180 天无活动的普通用户 (级联删除)
       try {
         await env.DB.prepare("DELETE FROM users WHERE role = 'user' AND last_active_at < ?").bind(inactivityThreshold).run();
       } catch (e) {
         console.error("[Cron] Inactive users cleanup failed:", e);
       }
 
-      // 2. 全局日志清理 (高效 SQL)
+      // 全局日志清理 (高效 SQL)
       try {
         await logModel.cleanupGlobal();
       } catch (e) {
         console.error("[Cron] Global log cleanup failed:", e);
       }
 
-      // 3. 限制同步频率：每次同步最久没更新且更新时间超过 24 小时的 10 个 Profile
+      // 限制同步频率：每次同步最久没更新且更新时间超过 24 小时的 10 个 Profile
       try {
         const oneDayAgo = now - 86400;
         const { results: syncTargets } = await env.DB.prepare(

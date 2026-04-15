@@ -10,7 +10,7 @@ export const pipelineConfig = {
   async load(context: Context, track: (name: string) => void): Promise<{ settings: ProfileSettings; rules: Rule[]; bloom?: BloomFilter } | null> {
     const { profileId, env, ctx } = context;
 
-    // 1. 检查 L1 Memory (Isolate Global)
+    // 检查 L1 Memory (Isolate Global)
     const inMem = bloomMemoryMap.get(profileId);
     const cachedConfig = configCache.get(profileId);
     
@@ -19,7 +19,7 @@ export const pipelineConfig = {
       return { ...cachedConfig, bloom: inMem.bloom };
     }
 
-    // 2. 检查 L2 Cache API
+    // 检查 L2 Cache API
     const cache = (caches as any).default;
     const profileCacheKey = `profile_v6:${profileId}`;
     const bloomInternalUrl = `https://obex.local/bloom-bin/${profileId}`;
@@ -42,7 +42,7 @@ export const pipelineConfig = {
       }
     }
 
-    // 3. 回退到 D1 (配置) 和 R2 (布隆过滤器)
+    // 回退到 D1 (配置) 和 R2 (布隆过滤器)
     const profileModel = new ProfileModel(env.DB);
     const profile = await profileModel.getById(profileId);
     if (!profile) return null;

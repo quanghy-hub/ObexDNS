@@ -277,13 +277,13 @@ export function buildResponse(queryRaw: Uint8Array, type: string, value: string,
       return err;
     }
 
-    // 1. 准备 Header (12 字节)
+    // 准备 Header (12 字节)
     const header = new Uint8Array(12);
     header.set(queryRaw.slice(0, 12));
     header[2] = (header[2] & 0x01) | 0x84; // QR=1, AA=1, 继承 RD
     header[3] = 0x80 | (rcode & 0x0F);    // RA=1, RCODE
     
-    // 2. 提取 Question Section (紧跟 Header 之后)
+    // 提取 Question Section (紧跟 Header 之后)
     let qEnd = 12;
     const qCount = (queryRaw[4] << 8) | queryRaw[5];
     for (let i = 0; i < qCount; i++) {
@@ -309,7 +309,7 @@ export function buildResponse(queryRaw: Uint8Array, type: string, value: string,
       return res;
     }
 
-    // 3. 准备 Answer 内容
+    // 准备 Answer 内容
     let data: number[] = [];
     if (type === 'A') {
       data = value.split('.').map(v => parseInt(v) || 0);
@@ -362,7 +362,7 @@ export function buildResponse(queryRaw: Uint8Array, type: string, value: string,
       }
     }
 
-    // 4. 构建 Answer Resource Record (RR)
+    // 构建 Answer Resource Record (RR)
     // RR 结构: NAME(2) + TYPE(2) + CLASS(2) + TTL(4) + RDLENGTH(2) + RDATA(variable)
     const rdlength = data.length;
     // Answer Resource Record
@@ -383,7 +383,7 @@ export function buildResponse(queryRaw: Uint8Array, type: string, value: string,
     // RDATA: 实际的记录数据 (IP地址, 域名, 文本等)
     answerRR.set(data, 12);
 
-    // 5. 组装最终的 DNS 响应包
+    // 组装最终的 DNS 响应包
     const res = new Uint8Array(12 + questionSection.length + answerRR.length);
     // 写入 Header
     res.set(header);
