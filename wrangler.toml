@@ -16,11 +16,9 @@ database_name = "obex_db"
 database_id = "0d6f239e-47c2-4865-bf66-ddef6b292824"
 
 # R2 Bucket for Bloom Filters and more
-# R2 is not enabled on the current Cloudflare account yet. Re-enable this
-# binding after enabling R2 and creating the obex-storage bucket.
-# [[r2_buckets]]
-# binding = "BUCKET"
-# bucket_name = "obex-storage"
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "obex-storage"
 
 # KV Namespace for Cache (Deprecated, primary use Cache API)
 # [[kv_namespaces]]
